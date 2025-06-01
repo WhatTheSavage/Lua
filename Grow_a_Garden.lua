@@ -665,28 +665,20 @@ do
             end
         end
     end
+    local function getPlayerFarmFolder()
+        local farmParent = workspace:FindFirstChild("Farm")
+        if not farmParent then return nil end
 
-    local function getSelectedSeeds()
-        local seeds = {}
-        for k, v in pairs(Options.Select_Seed_Plant.Value) do
-            if v == true and type(k) == "string" and k ~= "" then
-                table.insert(seeds, k)
+        for _, farmFolder in ipairs(farmParent:GetChildren()) do
+            local important = farmFolder:FindFirstChild("Important")
+            if important and important:FindFirstChild("Data") and important.Data:FindFirstChild("Owner") and important.Data:FindFirstChild("Farm_Number") then
+                if important.Data.Owner.Value == player.Name then
+                    return farmFolder
+                end
             end
         end
-        return seeds
-    end
-    local function findSeedTool(seedName)
-        local lowerName = seedName:lower()
-        for _, t in ipairs(player.Backpack:GetChildren()) do
-            if t:IsA("Tool") and t.Name:lower():match("^" .. lowerName .. "%s*seed") then
-                return t
-            end
-        end
-        for _, t in ipairs(player.Character:GetChildren()) do
-            if t:IsA("Tool") and t.Name:lower():match("^" .. lowerName .. "%s*seed") then
-                return t
-            end
-        end
+
+        return nil
     end
     local auto_plant = Tabs.Plant:AddSection("[ 🌱 ] - Plant")
     local select_seed = auto_plant:AddDropdown("Select_Seed_Plant", {
@@ -707,24 +699,64 @@ do
         writefile(file, HttpService:JSONEncode(Settings))
 
         if on then
-            spawn(function()
-                while Options.Auto_Plant.Value do
-                    local seeds = getSelectedSeeds()
-                    if #seeds == 0 then
-                        break
+            task.spawn(function()
+                while auto_plant_toggle.Value do
+                    local farmFolder = getPlayerFarmFolder()
+                    if not farmFolder then
+                        task.wait(0.1)
+                        continue
                     end
 
-                    if not farmIndex then
-                        break
+                    local farmNumberVal = farmFolder.Important.Data:FindFirstChild("Farm_Number")
+                    local idx = nil
+                    if farmNumberVal then
+                        if typeof(farmNumberVal.Value) == "string" then
+                            idx = tonumber(farmNumberVal.Value)
+                        else
+                            idx = farmNumberVal.Value
+                        end
+                    end
+
+                    if type(idx) ~= "number" then
+                        task.wait(0.1)
+                        continue
+                    end
+
+                    local seeds = {}
+                    for name, enabled in pairs(Options.Select_Seed_Plant.Value) do
+                        if enabled and type(name) == "string" then
+                            table.insert(seeds, name)
+                        end
+                    end
+
+                    if #seeds == 0 then
+                        task.wait(0.1)
+                        continue
                     end
 
                     for _, seedName in ipairs(seeds) do
-                        local tool = findSeedTool(seedName)
-                        if tool then
-                            player.Character.Humanoid:EquipTool(tool)
+                        local function findSeedTool(seedName)
+                            local lowerName = seedName:lower()
+                            for _, t in ipairs(player.Backpack:GetChildren()) do
+                                if t:IsA("Tool") and t.Name:lower():match("^" .. lowerName .. "%s*seed") then
+                                    return t
+                                end
+                            end
+                            for _, t in ipairs(player.Character:GetChildren()) do
+                                if t:IsA("Tool") and t.Name:lower():match("^" .. lowerName .. "%s*seed") then
+                                    return t
+                                end
+                            end
+                            return nil
                         end
 
-                        local positions = plant_data.locations["Plant"][farmIndex]
+                        local tool = findSeedTool(seedName)
+                        if tool and player.Character and player.Character:FindFirstChildOfClass("Humanoid") then
+                            player.Character:FindFirstChildOfClass("Humanoid"):EquipTool(tool)
+                            task.wait(0.01)
+                        end
+
+                        local positions = plant_data.locations["Plant"][idx]
                         if positions then
                             for _, locStr in ipairs(positions) do
                                 local nums = {}
@@ -733,13 +765,18 @@ do
                                 end
                                 local pos = Vector3.new(nums[1], nums[2], nums[3])
                                 plantRemote:FireServer(pos, seedName)
+                                task.wait(0.01)
                             end
                         end
                     end
 
-                    task.wait(0.1)
+                    task.wait(0.01)
                 end
             end)
+        else
+            if player.Character and player.Character:FindFirstChildOfClass("Humanoid") then
+                player.Character:FindFirstChildOfClass("Humanoid"):UnequipTools()
+            end
         end
     end)
 
@@ -779,20 +816,6 @@ do
         Settings.Plant.Harvert.Select_Mutations_Harvert = val
         writefile(file, HttpService:JSONEncode(Settings))
     end)
-
-    local function getPlayerFarmFolder()
-        local player = game.Players.LocalPlayer
-        local farmParent = workspace:WaitForChild("Farm")
-        for _, farmFolder in ipairs(farmParent:GetChildren()) do
-            local important = farmFolder:FindFirstChild("Important")
-            if important and important:FindFirstChild("Data") and important.Data:FindFirstChild("Owner") then
-                if important.Data.Owner.Value == player.Name then
-                    return farmFolder
-                end
-            end
-        end
-        return nil
-    end
 
     local function harvestLoop()
         local farmFolder = getPlayerFarmFolder()
