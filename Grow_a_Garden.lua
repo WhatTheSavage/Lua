@@ -1,3 +1,19 @@
+local Notification = require(game:GetService("ReplicatedStorage").Modules.Notification)
+
+if _G.Execute then
+    _G.Execute = _G.Execute + 1
+else
+    _G.Execute = 1
+end
+
+if _G.Execute >= 2 then
+    local player = game.Players.LocalPlayer
+    if player then
+        Notification:CreateNotification("You cannot execute the script twice.")
+        return
+    end
+end
+
 local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
 local InterfaceManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/InterfaceManager.lua"))()
 
@@ -554,14 +570,14 @@ local Window = Fluent:CreateWindow({
 })
 
 local Tabs = {
-    Log =  Window:AddTab({ Title = "Log", Icon = "key" }),
-    Plant = Window:AddTab({ Title = "Plant", Icon = "sprout" }),
-    Egg = Window:AddTab({ Title = "Egg", Icon = "egg" }),
-    Pet = Window:AddTab({ Title = "Pet", Icon = "bone" }),
-    Event =  Window:AddTab({ Title = "Event", Icon = "electricity" }),
-    Shop = Window:AddTab({ Title = "Shop", Icon = "shopping-cart" }),
-    Misc = Window:AddTab({ Title = "Misc", Icon = "cpu" }),
-    Settings = Window:AddTab({ Title = "Settings", Icon = "settings" })
+    Log = Window:AddTab({ Title = "Activity Log", Icon = "key" }),
+    Plant = Window:AddTab({ Title = "Planting Operations", Icon = "sprout" }),
+    Egg = Window:AddTab({ Title = "Egg Management", Icon = "egg" }),
+    Pet = Window:AddTab({ Title = "Pet Management", Icon = "bone" }),
+    Event = Window:AddTab({ Title = "Events", Icon = "electricity" }),
+    Shop = Window:AddTab({ Title = "Store", Icon = "shopping-cart" }),
+    Misc = Window:AddTab({ Title = "Miscellaneous", Icon = "cpu" }),
+    Settings = Window:AddTab({ Title = "Configuration", Icon = "settings" }),
 }
 
 local Options = Fluent.Options
@@ -2028,7 +2044,6 @@ Fluent:Notify({
 
 wait(0.5)
 
-local Notification = require(ReplicatedStorage.Modules.Notification)
 Notification:CreateNotification("Anti AFK : Activate")
 
 game:GetService("Players").LocalPlayer.Idled:Connect(function()
