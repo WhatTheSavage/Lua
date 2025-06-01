@@ -1349,8 +1349,7 @@ do
                             local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
                             humanoid:EquipTool(tool)
 
-                            local equippedTool = humanoid and humanoid:FindFirstChildOfClass("Tool")
-                            if auto_UnFavorite.Value and equippedTool == tool then
+                            if auto_UnFavorite.Value then
                                 favoriteRemote:FireServer(tool)
                             end
 
@@ -1392,10 +1391,6 @@ do
                             wait(2)
                         end
                     end
-                end
-
-                if player.Character and player.Character:FindFirstChildOfClass("Humanoid") then
-                    player.Character:FindFirstChildOfClass("Humanoid"):UnequipTools()
                 end
             end)
         else
