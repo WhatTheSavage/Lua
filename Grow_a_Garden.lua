@@ -4,7 +4,7 @@ local InterfaceManager = loadstring(game:HttpGet("https://raw.githubusercontent.
 local updateLogs = {
     {
         Title   = "1 / 6 / 25",
-        Content = "#Added\n - Auto Sell Pet\n - Swarm Event\n#Remove\n - Night Event\n#Fixed\n - Harvert very lag"
+        Content = "#Added\n - Auto Sell Pet\n - Swarm Event\n - Auto Favorite\n#Remove\n - Night Event\n#Fixed\n - Harvert very lag"
     },
     {
         Title   = "31 / 5 / 25",
@@ -61,7 +61,8 @@ local defaults = {
     },
     Event = {
         Swarm = {
-            Auto_Collect_Honey = false
+            Auto_Collect_Honey = false,
+            Auto_UnFavorite = false
         }
     },
     Shop = {
@@ -125,6 +126,7 @@ local saved_Auto_Sell_Pet = Settings.Pet_And_Egg.Pet.Auto_Sell_Pet
 
 -- Event > Swarm
 local saved_Auto_Collect_Honey = Settings.Event.Swarm.Auto_Collect_Honey
+local saved_Auto_UnFavorite = Settings.Event.Swarm.Auto_UnFavorite
 
 -- Shop > Seed_Shop
 local saved_Seed_Shop_Seeds = Settings.Shop.Seed_Shop.Select_Seeds
@@ -1301,9 +1303,14 @@ do
     bee_event:AddParagraph({
         Title = "Working after Swarm Event ended"
     })
-    local auto_Auto_Collect_Honey = bee_event:AddToggle("Auto_Collect_Honey", { Title = "Auto Collect Honey and Give Plant", Default = saved_Auto_Collect_Honey })
-    local autoCollectEnabled = auto_Auto_Collect_Honey.Value
-    auto_Auto_Collect_Honey:OnChanged(function(state)
+    local auto_UnFavorite = bee_event:AddToggle("Auto_UnFavorite", { Title = "Auto UnFavorite Pollinated", Default = saved_Auto_UnFavorite })
+    auto_UnFavorite:OnChanged(function(state)
+        Settings.Event.Swarm.Auto_UnFavorite = state
+        writefile(file, HttpService:JSONEncode(Settings))
+    end)
+    local auto_Collect_Honey = bee_event:AddToggle("Auto_Collect_Honey", { Title = "Auto Collect Honey and Give Plant", Default = saved_Auto_Collect_Honey })
+    local autoCollectEnabled = auto_Collect_Honey.Value
+    auto_Collect_Honey:OnChanged(function(state)
         Settings.Event.Swarm.Auto_Collect_Honey = state
         writefile(file, HttpService:JSONEncode(Settings))
 
@@ -1311,13 +1318,19 @@ do
 
         if state then
             task.spawn(function()
-                local label = workspace:WaitForChild("Interaction"):WaitForChild("UpdateItems"):WaitForChild("HoneyEvent"):WaitForChild("HoneyCombpressor"):WaitForChild("Sign"):WaitForChild("SurfaceGui"):WaitForChild("TextLabel")
+                local label = workspace:WaitForChild("Interaction")
+                    :WaitForChild("UpdateItems")
+                    :WaitForChild("HoneyEvent")
+                    :WaitForChild("HoneyCombpressor")
+                    :WaitForChild("Sign")
+                    :WaitForChild("SurfaceGui")
+                    :WaitForChild("TextLabel")
 
                 local function findPollinatedTool()
                     for _, container in ipairs({ player.Backpack, player.Character }) do
                         if container then
                             for _, tool in ipairs(container:GetChildren()) do
-                                if tool:IsA("Tool") and tool:GetAttribute("Pollinated") == true and tool:GetAttribute("Favorite") ~= true then
+                                if tool:IsA("Tool") and tool:GetAttribute("Pollinated") == true then
                                     return tool
                                 end
                             end
@@ -1327,39 +1340,57 @@ do
                 end
 
                 while autoCollectEnabled do
-                    local tool = findPollinatedTool()
-                    if tool and player.Character and player.Character:FindFirstChildOfClass("Humanoid") then
-                        if tool:GetAttribute("Favorite") ~= true then
+                    local text = label.Text
+                    if text:match("%d+:%d+") then
+                        wait(1)
+                    else
+                        local tool = findPollinatedTool()
+                        if tool and player.Character and player.Character:FindFirstChildOfClass("Humanoid") then
                             local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
                             humanoid:EquipTool(tool)
 
-                            local text = label.Text
+                            local equippedTool = humanoid and humanoid:FindFirstChildOfClass("Tool")
+                            if auto_UnFavorite.Value and equippedTool == tool then
+                                favoriteRemote:FireServer(tool)
+                            end
 
-                            if not text:match("%d+:%d+") then
+                            text = label.Text
+                            if text == "READY" then
                                 beeEventRemote:FireServer("MachineInteract")
-                                wait(0.5)
+                                wait(1)
                                 text = label.Text
-
                                 if text:match("%d+:%d+") then
                                     repeat
                                         wait(1)
                                         text = label.Text
                                     until (not text:match("%d+:%d+")) or (not autoCollectEnabled)
                                 end
-
-                                if not autoCollectEnabled then break end
-                                wait(1)
                             else
-                                repeat
-                                    wait(1)
+                                if not text:match("%d+:%d+") then
+                                    beeEventRemote:FireServer("MachineInteract")
+                                    wait(0.5)
                                     text = label.Text
-                                until (not text:match("%d+:%d+")) or (not autoCollectEnabled)
-                                if not autoCollectEnabled then break end
-                                wait(1)
+
+                                    if text:match("%d+:%d+") then
+                                        repeat
+                                            wait(1)
+                                            text = label.Text
+                                        until (not text:match("%d+:%d+")) or (not autoCollectEnabled)
+                                    end
+                                    if not autoCollectEnabled then break end
+                                    wait(1)
+                                else
+                                    repeat
+                                        wait(1)
+                                        text = label.Text
+                                    until (not text:match("%d+:%d+")) or (not autoCollectEnabled)
+                                    if not autoCollectEnabled then break end
+                                    wait(1)
+                                end
                             end
+                        else
+                            wait(2)
                         end
-                    else
-                        wait(2)
                     end
                 end
 
@@ -1591,49 +1622,85 @@ do
     -- [ Fovorite ]
     local function favoriteLoop()
         local selectedFruits = getSelected(Options.Select_Favorite_Fruits.Value)
-        local selectedMuts = getSelected(Options.Select_Favorite_Mutations.Value)
-        local selectedPets = getSelected(Options.Select_Favorite_Pets.Value)
-        local filterFruit = #selectedFruits > 0
-        local filterMut = #selectedMuts > 0
-        local filterPet= #selectedPets > 0
+        local selectedMuts   = getSelected(Options.Select_Favorite_Mutations.Value)
+        local selectedPets   = getSelected(Options.Select_Favorite_Pets.Value)
 
-        for _, container in ipairs({player.Backpack, player.Character}) do
-            if container then
-                for _, tool in ipairs(container:GetChildren()) do
-                    if tool:IsA("Tool") and tool:GetAttribute("Favorite") ~= true then
-                        local name = tool.Name
-                        local basePetName = name:match("^(.-)%s*%[")
-                        if filterPet and basePetName and table.find(selectedPets, basePetName) then
-                            favoriteRemote:FireServer(tool)
-                        else
-                            local mutation = name:match("^%[([^%]]+)%]")
-                            local fruitNamePart
-                            if name:match("^%[") then
-                                fruitNamePart = name:match("^%[.+%]%s*(.-)%s*%[")
-                            else
-                                fruitNamePart = name:match("^(.-)%s*%[")
+        local filterFruit = #selectedFruits > 0
+        local filterMut   = #selectedMuts > 0
+        local filterPet   = #selectedPets > 0
+
+        for _, container in ipairs({ player.Backpack, player.Character }) do
+            if not container then
+                continue
+            end
+
+            for _, tool in ipairs(container:GetChildren()) do
+                if not tool:IsA("Tool") then
+                    continue
+                end
+
+                if tool:GetAttribute("Favorite") == true then
+                    continue
+                end
+
+                local name = tool.Name
+
+                if filterPet and (not filterFruit) and (not filterMut) then
+                    local basePetName = name:match("^(.-)%s*%[")
+                    if basePetName and table.find(selectedPets, basePetName) then
+                        favoriteRemote:FireServer(tool)
+                    end
+                    continue
+                end
+
+                local fruitNamePart
+                if name:match("^%[") then
+                    fruitNamePart = name:match("^%[.+%]%s*(.-)%s*%[")
+                else
+                    fruitNamePart = name:match("^(.-)%s*%[")
+                end
+
+                local mutationList = name:match("^%[([^%]]+)%]")
+
+                if filterFruit and not filterMut then
+                    if fruitNamePart and table.find(selectedFruits, fruitNamePart) then
+                        favoriteRemote:FireServer(tool)
+                    end
+                    continue
+                end
+
+                if filterMut and not filterFruit then
+                    if mutationList then
+                        for _, m in ipairs(selectedMuts) do
+                            if mutationList:find(m) then
+                                favoriteRemote:FireServer(tool)
+                                break
                             end
-                            if filterFruit then
-                                for _, f in ipairs(selectedFruits) do
-                                    if fruitNamePart == f then
-                                        if filterMut then
-                                            if mutation and table.find(selectedMuts, mutation) then
-                                                favoriteRemote:FireServer(tool)
-                                            end
-                                        else
-                                            favoriteRemote:FireServer(tool)
-                                        end
-                                        break
-                                    end
-                                end
-                            elseif filterMut then
-                                if mutation and table.find(selectedMuts, mutation) then
+                        end
+                    end
+                    continue
+                end
+
+                if filterFruit and filterMut then
+                    if fruitNamePart and table.find(selectedFruits, fruitNamePart) then
+                        if mutationList then
+                            for _, m in ipairs(selectedMuts) do
+                                if mutationList:find(m) then
                                     favoriteRemote:FireServer(tool)
+                                    break
                                 end
                             end
                         end
                     end
+                    continue
                 end
+
+                if (not filterFruit) and (not filterMut) and (not filterPet) then
+                    if mutationList then
+                        favoriteRemote:FireServer(tool)
+                    end
+                end
+
             end
         end
     end
