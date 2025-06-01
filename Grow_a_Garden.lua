@@ -254,7 +254,8 @@ local plant_data = {
         "Zombified",
         "Celestial",
         "Pollinated",
-        "Voidtouched"
+        "Voidtouched",
+        "HoneyGlazed"
     },
     shop = {
         "Carrot",
@@ -363,31 +364,7 @@ local gear_data = {
     "Harvert Tool"
 }
 
-local egg_data = {
-    other = {
-        locations = {
-            [1] = "-289.04126, 2.87552762, 3.73038578, 1, 0, 0, 0, 1, 0, 0, 0, 1",
-            [2] = "-289.039246, 2.79752779, 11.7703476, 1, 0, 0, 0, 1, 0, 0, 0, 1",
-            [3] = "-289.031219, 2.79752779, 7.74039459, 1, 0, 0, 0, 1, 0, 0, 0, 1"
-        },
-
-        skin_color = {
-            ["Common"] = "248, 248, 248",
-            ["Uncommon"] = "211, 167, 129",
-            ["Rare"] = "33, 84, 185",
-            ["Legendary"] = "163, 50, 50",
-            ["Mythical"] = "255, 170, 0",
-            ["Bug"] = "53, 190, 29"
-        }
-    },
-    shop = {
-        "Common",
-        "Uncommon",
-        "Rare",
-        "Legendary",
-        "Mythical",
-        "Bug"
-    },
+local pet_data = {
     pet = {
         "Dog",
         "Golden Lab",
@@ -421,6 +398,66 @@ local egg_data = {
         "Caterpillar",
         "Praying Mantis",
         "Dragonfly",
+    },
+    event = {
+        Lunar_Glow_Event = {
+            "Hedgehog",
+            "Kiwi",
+            "Panda",
+            "Blood Hedgehog",
+            "Frog",
+            "Mole",
+            "Moon Cat",
+            "Chicken Zombie",
+            "Blood Kiwi",
+            "Echo Frog",
+            "Owl",
+            "Blood Owl",
+            "Night Owl",
+            "Raccoon"
+        },
+        Bizzy_Bee_Event = {
+            "Bee",
+            "Honey Bee",
+            "Bear Bee",
+            "Petal Bee",
+            "Queen Bee"
+        }
+    }
+}
+
+local egg_data = {
+    other = {
+        locations = {
+            [1] = "-289.04126, 2.87552762, 3.73038578, 1, 0, 0, 0, 1, 0, 0, 0, 1",
+            [2] = "-289.039246, 2.79752779, 11.7703476, 1, 0, 0, 0, 1, 0, 0, 0, 1",
+            [3] = "-289.031219, 2.79752779, 7.74039459, 1, 0, 0, 0, 1, 0, 0, 0, 1"
+        },
+
+        skin_color = {
+            ["Common"] = "248, 248, 248",
+            ["Uncommon"] = "211, 167, 129",
+            ["Rare"] = "33, 84, 185",
+            ["Legendary"] = "163, 50, 50",
+            ["Mythical"] = "255, 170, 0",
+            ["Bug"] = "53, 190, 29"
+        }
+    },
+    shop = {
+        "Common",
+        "Uncommon",
+        "Rare",
+        "Legendary",
+        "Mythical",
+        "Bug"
+    },
+    event = {
+        Lunar_Glow_Event = {
+            "Night"
+        },
+        Bizzy_Bee_Event = {
+            "Bee"
+        }
     }
 }
 
@@ -1023,6 +1060,15 @@ do
 
 
     -- [ Egg ]
+    local eggOptions = {}
+    for _, name in ipairs(egg_data.shop) do
+        table.insert(eggOptions, name)
+    end
+    for _, eventList in pairs(egg_data.event) do
+        for _, name in ipairs(eventList) do
+            table.insert(eggOptions, name)
+        end
+    end
     local function getPlayerFarmIndex()
         local farmParent = workspace:FindFirstChild("Farm")
         if not farmParent then return nil end
@@ -1044,6 +1090,11 @@ do
     local egg_choices = {}
     for _, name in ipairs(egg_data.shop) do
         table.insert(egg_choices, name .. " Egg")
+    end
+    for _, eventList in pairs(egg_data.event) do
+        for _, name in ipairs(eventList) do
+            table.insert(egg_choices, name .. " Egg")
+        end
     end
     local auto_egg = Tabs.Pet_And_Egg:AddSection("[ 🥚 ] - Egg")
     local select_egg_to_place = auto_egg:AddDropdown("Select_Egg_To_Place", {
@@ -1186,11 +1237,20 @@ do
     end)
 
     -- [ Pet ]
+    local petOptions = {}
+    for _, name in ipairs(pet_data.pet) do
+        table.insert(petOptions, name)
+    end
+    for _, eventList in pairs(pet_data.event) do
+        for _, name in ipairs(eventList) do
+            table.insert(petOptions, name)
+        end
+    end
     local auto_pet = Tabs.Pet_And_Egg:AddSection("[ 🐶 ] - Pet")
     local select_pet_to_sell = auto_pet:AddDropdown("Select_Pet_To_Sell", {
         Title = "Select Pet To Sell",
         Description = "You can select multiple Pets",
-        Values = egg_data.pet,
+        Values = petOptions,
         Multi = true,
         Default = saved_Pet_To_Sell,
     })
@@ -1415,11 +1475,15 @@ do
             end)
         end
     end)
+    local egg_choices_shop = {}
+    for _, name in ipairs(egg_data.shop) do
+        table.insert(egg_choices_shop, name .. " Egg")
+    end
     local egg_shop = Tabs.Shop:AddSection("[ 🥚 ] - Egg Shop")
     local select_egg = egg_shop:AddDropdown("Select_Eggs", {
         Title = "Buy Eggs",
         Description = "You can select multiple eggs",
-        Values = egg_choices,
+        Values = egg_choices_shop,
         Multi = true,
         Default = saved_Egg_Shop,
     })
@@ -1599,7 +1663,7 @@ do
     local selectFavos_Pets = auto_favorite:AddDropdown("Select_Favorite_Pets", {
         Title = "Select Favorite Pets",
         Description = "You can select multiple Pets",
-        Values = egg_data.pet,
+        Values = petOptions,
         Multi = true,
         Default = saved_Favorite_Pets,
     })
@@ -1607,7 +1671,7 @@ do
         Settings.Misc.Favorite.Select_Favorite_Pets = val
         writefile(file, HttpService:JSONEncode(Settings))
     end)
-    local autoFavoriteToggle = auto_favorite:AddToggle("Auto_Favorite", { Title = "Auto Favorite", Default = saved_Auto_Harvest })
+    local autoFavoriteToggle = auto_favorite:AddToggle("Auto_Favorite", { Title = "Auto Favorite", Default = saved_Auto_Favorite })
     autoFavoriteToggle:OnChanged(function(state)
         Settings.Misc.Favorite.Auto_Favorite = state
         writefile(file, HttpService:JSONEncode(Settings))
