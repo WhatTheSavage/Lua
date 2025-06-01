@@ -3,8 +3,12 @@ local InterfaceManager = loadstring(game:HttpGet("https://raw.githubusercontent.
 
 local updateLogs = {
     {
+        Title   = "2 / 6 / 25",
+        Content = "#Added\n - Auto Feed Pet\n#Fixed\n - Auto Sell not working on mobile"
+    },
+    {
         Title   = "1 / 6 / 25",
-        Content = "#Added\n - Auto Sell Pet\n - Swarm Event\n - Auto Favorite\n#Remove\n - Night Event\n#Fixed\n - Harvert very lag"
+        Content = "#Added\n - Auto Sell Pet\n - Swarm Event\n - Auto Favorite\n#Remove\n - Night Event\n#Fixed\n - Harvert very lag\n - Auto Buy Egg not working"
     },
     {
         Title   = "31 / 5 / 25",
@@ -15,7 +19,7 @@ local updateLogs = {
 local owner = "PrimeX_GG"
 local hub = "PrimeXploit"
 local scriptName = "Grow a Garden"
-local update = "1 / 6 / 25"
+local update = "2 / 6 / 25"
 local discord_link = "https://discord.gg/dbnuRpY2"
 
 local folder = hub
@@ -48,15 +52,22 @@ local defaults = {
             Auto_Sell = false
         },
     },
-    Pet_And_Egg = {
-        Egg = {
+    Egg = {
+        Auto_Place_And_Hatch = {
             Select_Eggs_To_Place = {},
             Auto_Place_Egg = false,
             Auto_Hatch_Egg = false
-        },
-        Pet = {
+        }
+    },
+    Pet = {
+        Auto_Sell_Pet = {
             Select_Pet_To_Sell = {},
             Auto_Sell_Pet = false
+        },
+        Auto_Feed_Pet = {
+            Select_Pet_To_Feed = {},
+            Select_Fruit_To_Feed = {},
+            Auto_Feed_Pet = false
         }
     },
     Event = {
@@ -115,14 +126,19 @@ local saved_Auto_Harvest = Settings.Plant.Harvert.Auto_Harvert
 local saved_Sell_Modes = Settings.Plant.Auto_Sell.Select_Sell_Mode
 local saved_Auto_Sell = Settings.Plant.Auto_Sell.Auto_Sell
 
--- Egg > Egg
-local saved_Eggs_To_Place = Settings.Pet_And_Egg.Egg.Select_Eggs_To_Place
-local saved_Auto_Place_Egg = Settings.Pet_And_Egg.Egg.Auto_Place_Egg
-local saved_Auto_Hatch_Egg = Settings.Pet_And_Egg.Egg.Auto_Hatch_Egg
+-- Egg > Auto_Place_And_Hatch
+local saved_Eggs_To_Place = Settings.Egg.Auto_Place_And_Hatch.Select_Eggs_To_Place
+local saved_Auto_Place_Egg = Settings.Egg.Auto_Place_And_Hatch.Auto_Place_Egg
+local saved_Auto_Hatch_Egg = Settings.Egg.Auto_Place_And_Hatch.Auto_Hatch_Egg
 
--- Egg > Pet
-local saved_Pet_To_Sell = Settings.Pet_And_Egg.Pet.Select_Pet_To_Sell
-local saved_Auto_Sell_Pet = Settings.Pet_And_Egg.Pet.Auto_Sell_Pet
+-- Pet > Auto_Sell_Pet
+local saved_Pet_To_Sell = Settings.Pet.Auto_Sell_Pet.Select_Pet_To_Sell
+local saved_Auto_Sell_Pet = Settings.Pet.Auto_Sell_Pet.Auto_Sell_Pet
+
+-- Pet > Auto_Feed_Pet
+local saved_Pet_To_Feed = Settings.Pet.Auto_Feed_Pet.Select_Pet_To_Feed
+local saved_Fruit_To_Feed = Settings.Pet.Auto_Feed_Pet.Select_Fruit_To_Feed
+local saved_Auto_Feed_Pet = Settings.Pet.Auto_Feed_Pet.Auto_Feed_Pet
 
 -- Event > Swarm
 local saved_Auto_Collect_Honey = Settings.Event.Swarm.Auto_Collect_Honey
@@ -464,23 +480,33 @@ local egg_data = {
 }
 
 local Players = game:GetService("Players")
-local player  = Players.LocalPlayer
 
 local workspace = game:GetService("Workspace")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local player  = Players.LocalPlayer
+
+-- Remotes for buying items
 local buySeedRemote = ReplicatedStorage.GameEvents:WaitForChild("BuySeedStock")
 local buyGearRemote = ReplicatedStorage.GameEvents:WaitForChild("BuyGearStock")
 local buyPetEggRemote = ReplicatedStorage.GameEvents:WaitForChild("BuyPetEgg")
 local buyBeeRemote = ReplicatedStorage.GameEvents:WaitForChild("BuyEventShopStock")
 
+-- Remotes for actions
 local plantRemote = ReplicatedStorage.GameEvents:WaitForChild("Plant_RE")
-local ByteNetReliable = ReplicatedStorage:WaitForChild("ByteNetReliable")
-local beeEventRemote = ReplicatedStorage:WaitForChild("GameEvents"):WaitForChild("HoneyMachineService_RE")
+local beeEventRemote = ReplicatedStorage.GameEvents:WaitForChild("HoneyMachineService_RE")
+local SellInventoryRemote = ReplicatedStorage.GameEvents:WaitForChild("Sell_Inventory")
+local favoriteRemote = ReplicatedStorage.GameEvents:WaitForChild("Favorite_Item")
 
-local PetEggService = ReplicatedStorage:WaitForChild("GameEvents"):WaitForChild("PetEggService")
+-- Service Remotes
+local PetEggService = ReplicatedStorage.GameEvents:WaitForChild("PetEggService")
+local feedPetRemote = ReplicatedStorage.GameEvents:WaitForChild("ActivePetService")
 
-local SellInventoryRemote = ReplicatedStorage:WaitForChild("GameEvents"):WaitForChild("Sell_Inventory")
-local favoriteRemote = ReplicatedStorage:WaitForChild("GameEvents"):WaitForChild("Favorite_Item")
+-- Networking
+local ByteNetReliable    = ReplicatedStorage:WaitForChild("ByteNetReliable")
+
+-- Modules
+local ActivePetsService  = require(ReplicatedStorage.Modules.PetServices.ActivePetsService)
 
 local farmFolder = workspace:WaitForChild("Farm")
 local innerFarm = farmFolder:WaitForChild("Farm")
@@ -516,7 +542,8 @@ local Window = Fluent:CreateWindow({
 local Tabs = {
     Log =  Window:AddTab({ Title = "Log", Icon = "key" }),
     Plant = Window:AddTab({ Title = "Plant", Icon = "sprout" }),
-    Pet_And_Egg = Window:AddTab({ Title = "Pet And Egg", Icon = "egg" }),
+    Egg = Window:AddTab({ Title = "Egg", Icon = "egg" }),
+    Pet = Window:AddTab({ Title = "Pet", Icon = "bone" }),
     Event =  Window:AddTab({ Title = "Event", Icon = "electricity" }),
     Shop = Window:AddTab({ Title = "Shop", Icon = "shopping-cart" }),
     Misc = Window:AddTab({ Title = "Misc", Icon = "cpu" }),
@@ -649,7 +676,7 @@ do
     end
     local auto_plant = Tabs.Plant:AddSection("[ 🌱 ] - Plant")
     local select_seed = auto_plant:AddDropdown("Select_Seed_Plant", {
-        Title = "Select Seeds",
+        Title = "Select Seeds To Plant",
         Description = "You can select multiple Seeds",
         Values = harvestOptions,
         Multi = true,
@@ -716,7 +743,7 @@ do
 
     local auto_harvert = Tabs.Plant:AddSection("[ 🌾 ] - Harvert")
     local selectFruits = auto_harvert:AddDropdown("Select_Fruits_Harvert", {
-        Title = "Select Fruits",
+        Title = "Select Fruits To Harvert",
         Description = "You can select multiple Fruits",
         Values = harvestOptions,
         Multi = true,
@@ -728,7 +755,7 @@ do
     end)
 
     local selectMuts = auto_harvert:AddDropdown("Select_Mutations_Harvert", {
-        Title = "Select Mutations",
+        Title = "Select Mutations To Harvert",
         Description = "You can select multiple Mutations",
         Values = plant_data.mutations,
         Multi = true,
@@ -1098,7 +1125,7 @@ do
             table.insert(egg_choices, name .. " Egg")
         end
     end
-    local auto_egg = Tabs.Pet_And_Egg:AddSection("[ 🥚 ] - Egg")
+    local auto_egg = Tabs.Egg:AddSection("[ 🥚 ] - Place And Hatch")
     local select_egg_to_place = auto_egg:AddDropdown("Select_Egg_To_Place", {
         Title = "Select Eggs To Place",
         Description = "You can select multiple Eggs",
@@ -1107,7 +1134,7 @@ do
         Default = saved_Eggs_To_Place,
     })
     select_egg_to_place:OnChanged(function(value)
-        Settings.Pet_And_Egg.Egg.Select_Egg_To_Place = value
+        Settings.Egg.Auto_Place_And_Hatch.Select_Eggs_To_Place = value
         writefile(file, HttpService:JSONEncode(Settings))
     end)
     local isPlacing = false
@@ -1129,7 +1156,7 @@ do
     end
     local auto_place_egg_toggle = auto_egg:AddToggle("Auto_Place_Egg", { Title = "Auto Place Egg", Default = saved_Auto_Place_Egg })
     auto_place_egg_toggle:OnChanged(function(on)
-        Settings.Pet_And_Egg.Egg.Auto_Place_Egg = on
+        Settings.Egg.Auto_Place_And_Hatch.Auto_Place_Egg = on
         writefile(file, HttpService:JSONEncode(Settings))
 
         isPlacing = on
@@ -1216,7 +1243,7 @@ do
     end
     local auto_hatch_egg_toggle = auto_egg:AddToggle("Auto_Hatch_Egg", { Title = "Auto Hatch Egg", Default = saved_Auto_Hatch_Egg })
     auto_hatch_egg_toggle:OnChanged(function(on)
-        Settings.Pet_And_Egg.Egg.Auto_Hatch_Egg = on
+        Settings.Egg.Auto_Place_And_Hatch.Auto_Hatch_Egg = on
         writefile(file, HttpService:JSONEncode(Settings))
 
         isHatching = on
@@ -1248,21 +1275,21 @@ do
             table.insert(petOptions, name)
         end
     end
-    local auto_pet = Tabs.Pet_And_Egg:AddSection("[ 🐶 ] - Pet")
-    local select_pet_to_sell = auto_pet:AddDropdown("Select_Pet_To_Sell", {
-        Title = "Select Pet To Sell",
+    local auto_sell_pet = Tabs.Pet:AddSection("[ 🐶 ] - Auto Sell Pet")
+    local select_pet_to_sell = auto_sell_pet:AddDropdown("Select_Pet_To_Sell", {
+        Title = "Select Pets To Sell",
         Description = "You can select multiple Pets",
         Values = petOptions,
         Multi = true,
         Default = saved_Pet_To_Sell,
     })
     select_pet_to_sell:OnChanged(function(value)
-        Settings.Pet_And_Egg.Pet.Select_Pet_To_Sell = value
+        Settings.Pet.Auto_Sell_Pet.Select_Pet_To_Sell = value
         writefile(file, HttpService:JSONEncode(Settings))
     end)
-    local auto_sell_pet_toggle = auto_pet:AddToggle("Auto_Sell_Pet", { Title = "Auto Sell Pet", Default = saved_Auto_Sell_Pet })
+    local auto_sell_pet_toggle = auto_sell_pet:AddToggle("Auto_Sell_Pet", { Title = "Auto Sell Pet", Default = saved_Auto_Sell_Pet })
     auto_sell_pet_toggle:OnChanged(function(on)
-        Settings.Pet_And_Egg.Pet.Auto_Sell_Pet = on
+        Settings.Pet.Auto_Sell_Pet.Auto_Sell_Pet = on
         writefile(file, HttpService:JSONEncode(Settings))
 
         if on then
@@ -1293,6 +1320,194 @@ do
                     task.wait(0.1)
                 end
             end)
+        end
+    end)
+
+    -- [ Auto Feed Pet ]
+    local function findFruitTool(fruitName)
+        local lc = fruitName:lower()
+        for _, container in ipairs({player.Backpack, player.Character}) do
+            if container then
+                for _, t in ipairs(container:GetChildren()) do
+                    if t:IsA("Tool") then
+                        local nameLower = t.Name:lower()
+                        local isSeed = nameLower:find("seed")
+                        local isFavorite = t:GetAttribute("Favorite") == true
+
+                        if not isSeed and not isFavorite then
+                            local strippedName = nameLower
+                            local closeBracket = nameLower:find("]%s*")
+                            if closeBracket then
+                                strippedName = nameLower:sub(closeBracket + 1)
+                            end
+
+                            if strippedName:match("^%s*" .. lc) then
+                                return t
+                            end
+                        end
+                    end
+                end
+            end
+        end
+        return nil
+    end
+    local auto_feed_pet = Tabs.Pet:AddSection("[ 🍒 ] - Auto Feed Pet")
+    local select_pet_to_feed = auto_feed_pet:AddDropdown("Select_Pets_To_Feed", {
+        Title = "Select Pets To Feed",
+        Description = "You can select multiple Pets",
+        Values = {},
+        Multi = true,
+        Default = saved_Pet_To_Feed,
+    })
+    select_pet_to_feed:OnChanged(function(value)
+        Settings.Pet.Auto_Feed_Pet.Select_Pet_To_Feed = value
+        writefile(file, HttpService:JSONEncode(Settings))
+    end)
+    local select_fruits_to_feed = auto_feed_pet:AddDropdown("Select_Fruits_To_Feed", {
+        Title = "Select Fruits To Feed",
+        Description = "You can select multiple Fruits",
+        Values = harvestOptions,
+        Multi = true,
+        Default = saved_Fruit_To_Feed,
+    })
+    select_fruits_to_feed:OnChanged(function(value)
+        Settings.Pet.Auto_Feed_Pet.Select_Fruit_To_Feed = value
+        writefile(file, HttpService:JSONEncode(Settings))
+    end)
+    local function updateOwnedPets()
+        local ownedPetNames = {}
+        for _, petContainer in ipairs(workspace:WaitForChild("PetsPhysical"):GetChildren()) do
+            local ownerName = petContainer:GetAttribute("OWNER")
+            if ownerName == player.Name then
+                local innerModel = petContainer:FindFirstChildWhichIsA("Model")
+                local petName = innerModel and innerModel.Name or petContainer.Name
+                table.insert(ownedPetNames, petName)
+            end
+        end
+
+        select_pet_to_feed:SetValues(ownedPetNames)
+
+        for i = #saved_Pet_To_Feed, 1, -1 do
+            local prev = saved_Pet_To_Feed[i]
+            if not table.find(ownedPetNames, prev) then
+                table.remove(saved_Pet_To_Feed, i)
+            end
+        end
+    end
+
+    updateOwnedPets()
+    workspace:WaitForChild("PetsPhysical").ChildAdded:Connect(function(child)
+        if child:GetAttribute("OWNER") == player.Name then
+            updateOwnedPets()
+        end
+    end)
+    workspace:WaitForChild("PetsPhysical").ChildRemoved:Connect(function(child)
+        if child:GetAttribute("OWNER") == player.Name then
+            updateOwnedPets()
+        end
+    end)
+    local auto_feed_pet_toggle = auto_feed_pet:AddToggle("Auto_Feed_Pet", { Title = "Auto Feed Pet", Default = saved_Auto_Feed_Pet })
+    auto_feed_pet_toggle:OnChanged(function(on)
+        Settings.Pet.Auto_Feed_Pet.Auto_Feed_Pet = on
+        writefile(file, HttpService:JSONEncode(Settings))
+
+        if on then
+            task.spawn(function()
+                while auto_feed_pet_toggle.Value do
+                    local petsToFeed = {}
+                    for petName, enabled in pairs(Options.Select_Pets_To_Feed.Value) do
+                        if enabled then
+                            table.insert(petsToFeed, petName)
+                        end
+                    end
+
+                    local fruitsToFeed = {}
+                    for fruitName, enabled in pairs(Options.Select_Fruits_To_Feed.Value) do
+                        if enabled then
+                            table.insert(fruitsToFeed, fruitName)
+                        end
+                    end
+
+                    if #petsToFeed == 0 or #fruitsToFeed == 0 then
+                        task.wait(1)
+                        continue
+                    end
+
+                    for _, petName in ipairs(petsToFeed) do
+                        local petUUID = nil
+                        for _, petContainer in ipairs(workspace:WaitForChild("PetsPhysical"):GetChildren()) do
+                            if petContainer:GetAttribute("OWNER") == player.Name then
+                                local innerModel = petContainer:FindFirstChildWhichIsA("Model")
+                                local nameToCheck = innerModel and innerModel.Name or petContainer.Name
+                                if nameToCheck == petName then
+                                    petUUID = petContainer:GetAttribute("UUID")
+                                    break
+                                end
+                            end
+                        end
+
+                        if not petUUID then
+                            continue
+                        end
+
+                        local gui = player.PlayerGui:FindFirstChild("ActivePetUI")
+                        if not gui then
+                            continue
+                        end
+
+                        local scrolling = gui.Frame.Main:FindFirstChild("ScrollingFrame")
+                        if not scrolling then
+                            continue
+                        end
+
+                        local petFrame = scrolling:FindFirstChild(petUUID)
+                        if not petFrame then
+                            continue
+                        end
+
+                        local stats = petFrame:FindFirstChild("PetStats")
+                        if not stats then
+                            continue
+                        end
+
+                        local hungerBar = stats:FindFirstChild("HUNGER") and stats.HUNGER:FindFirstChild("HUNGER_BAR")
+                        if not hungerBar then
+                            continue
+                        end
+
+                        while hungerBar.Size.X.Scale < 1 do
+                            local tool = findFruitTool(fruitsToFeed[1])
+                            if tool and player.Character and player.Character:FindFirstChildOfClass("Humanoid") then
+                                player.Character:FindFirstChildOfClass("Humanoid"):EquipTool(tool)
+                                task.wait(0.1)
+                                feedPetRemote:FireServer("Feed", petUUID)
+                                task.wait(0.5)
+                            else
+                                break
+                            end
+
+                            local newPetFrame = scrolling:FindFirstChild(petUUID)
+                            if not newPetFrame then
+                                break
+                            end
+                            local newStats = newPetFrame:FindFirstChild("PetStats")
+                            if not newStats then
+                                break
+                            end
+                            hungerBar = newStats:FindFirstChild("HUNGER") and newStats.HUNGER:FindFirstChild("HUNGER_BAR")
+                            if not hungerBar then
+                                break
+                            end
+                        end
+                    end
+
+                    task.wait(1)
+                end
+            end)
+        else
+            if player.Character and player.Character:FindFirstChildOfClass("Humanoid") then
+                player.Character:FindFirstChildOfClass("Humanoid"):UnequipTools()
+            end
         end
     end)
 
@@ -1535,6 +1750,21 @@ do
         end
         locMapping[idx] = Vector3.new(nums[1], nums[2], nums[3])
     end
+    local function findEggIndex(model)
+        local pivotPos = model:GetPivot().Position
+        local closestIdx = nil
+        local closestDist = math.huge
+
+        for idx, locPos in pairs(locMapping) do
+            local d = (pivotPos - locPos).Magnitude
+            if d < closestDist then
+                closestDist = d
+                closestIdx = idx
+            end
+        end
+
+        return closestIdx
+    end
     local function autoBuyEggs(filterTypes)
         local ok, eggFolder = pcall(function()
             return workspace:WaitForChild("NPCS"):WaitForChild("Pet Stand"):WaitForChild("EggLocations")
@@ -1578,12 +1808,9 @@ do
                 continue
             end
 
-            local pivotPos = model:GetPivot().Position
-            for idx, locPos in pairs(locMapping) do
-                if (pivotPos - locPos).Magnitude < 1 then
-                    buyPetEggRemote:FireServer(idx)
-                    break
-                end
+            local idx = findEggIndex(model)
+            if idx then
+                buyPetEggRemote:FireServer(idx)
             end
         end
     end
