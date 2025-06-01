@@ -505,29 +505,43 @@ local feedPetRemote = ReplicatedStorage.GameEvents:WaitForChild("ActivePetServic
 -- Networking
 local ByteNetReliable    = ReplicatedStorage:WaitForChild("ByteNetReliable")
 
--- Modules
-local ActivePetsService  = require(ReplicatedStorage.Modules.PetServices.ActivePetsService)
+local farmRoot = workspace:WaitForChild("Farm")
 
-local farmFolder = workspace:WaitForChild("Farm")
-local innerFarm = farmFolder:WaitForChild("Farm")
-local important = innerFarm:WaitForChild("Important")
-local dataFolder = important:WaitForChild("Data")
-local ownerValue = dataFolder:WaitForChild("Owner")
-local farmNumberVal = dataFolder:WaitForChild("Farm_Number")
+for _, farmFolder in ipairs(farmRoot:GetChildren()) do
+    local important = farmFolder:FindFirstChild("Important")
+    if not important then
+        warn("Not found folder 'Important' in :", farmFolder:GetFullName())
+        continue
+    end
 
-local farmIndex = nil
-if ownerValue.Value == player.Name then
-    if typeof(farmNumberVal.Value) == "string" then
-        farmIndex = tonumber(farmNumberVal.Value)
-    else
-        farmIndex = farmNumberVal.Value
+    local dataFolder = important:FindFirstChild("Data")
+    if not dataFolder then
+        warn("Not found folder 'Data' in :", important:GetFullName())
+        continue
     end
-    if typeof(farmIndex) ~= "number" then
-        warn(farmNumberVal.Value)
-        farmIndex = nil
+
+    local ownerValue = dataFolder:FindFirstChild("Owner")
+    local farmNumberVal = dataFolder:FindFirstChild("Farm_Number")
+    if not ownerValue or not farmNumberVal then
+        warn("Owner or Farm_Number missing :", dataFolder:GetFullName())
+        continue
     end
-else
-    warn(player.Name)
+
+    if ownerValue.Value == player.Name then
+        local farmIndex
+        if typeof(farmNumberVal.Value) == "string" then
+            farmIndex = tonumber(farmNumberVal.Value)
+        else
+            farmIndex = farmNumberVal.Value
+        end
+
+        if typeof(farmIndex) ~= "number" then
+            warn("'Farm_Number' not a number :", farmNumberVal.Value)
+            farmIndex = nil
+        else
+            print("Found Farm :", ownerValue.Value, "| Index :", farmIndex)
+        end
+    end
 end
 
 local Window = Fluent:CreateWindow({
