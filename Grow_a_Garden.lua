@@ -507,6 +507,7 @@ local ByteNetReliable    = ReplicatedStorage:WaitForChild("ByteNetReliable")
 
 local farmRoot = workspace:WaitForChild("Farm")
 
+local farmIndex = nil
 for _, farmFolder in ipairs(farmRoot:GetChildren()) do
     local important = farmFolder:FindFirstChild("Important")
     if not important then
@@ -528,7 +529,6 @@ for _, farmFolder in ipairs(farmRoot:GetChildren()) do
     end
 
     if ownerValue.Value == player.Name then
-        local farmIndex
         if typeof(farmNumberVal.Value) == "string" then
             farmIndex = tonumber(farmNumberVal.Value)
         else
