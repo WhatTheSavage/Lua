@@ -82,6 +82,14 @@ local defaults = {
             Auto_Buy_Eggs = false
         },
     },
+    Misc = {
+        Favorite = {
+            Select_Favorite_Fruits = {},
+            Select_Favorite_Mutations = {},
+            Select_Favorite_Pets = {},
+            Auto_Favorite = false
+        }
+    },
 }
 
 for cat, tbl in pairs(defaults) do
@@ -133,6 +141,12 @@ local saved_Auto_Buy_Honey    = Settings.Shop.Honey_Shop.Auto_Buy_Items
 -- Shop > Egg_Shop
 local saved_Egg_Shop = Settings.Shop.Egg_Shop.Select_Eggs
 local saved_Auto_Buy_Eggs = Settings.Shop.Egg_Shop.Auto_Buy_Eggs
+
+-- Misc > Favorite
+local saved_Favorite_Fruits = Settings.Misc.Favorite.Select_Favorite_Fruits
+local saved_Favorite_Mutations = Settings.Misc.Favorite.Select_Favorite_Mutations
+local saved_Favorite_Pets = Settings.Misc.Favorite.Select_Favorite_Pets
+local saved_Auto_Favorite = Settings.Misc.Favorite.Auto_Favorite
 
 local plant_data = {
     locations = {
@@ -425,9 +439,9 @@ local ByteNetReliable = ReplicatedStorage:WaitForChild("ByteNetReliable")
 local beeEventRemote = ReplicatedStorage:WaitForChild("GameEvents"):WaitForChild("HoneyMachineService_RE")
 
 local PetEggService = ReplicatedStorage:WaitForChild("GameEvents"):WaitForChild("PetEggService")
-local objectsPhysical = workspace:WaitForChild("Farm"):WaitForChild("Farm"):WaitForChild("Important"):WaitForChild("Objects_Physical")
 
 local SellInventoryRemote = ReplicatedStorage:WaitForChild("GameEvents"):WaitForChild("Sell_Inventory")
+local favoriteRemote = ReplicatedStorage:WaitForChild("GameEvents"):WaitForChild("Favorite_Item")
 
 local farmFolder = workspace:WaitForChild("Farm")
 local innerFarm = farmFolder:WaitForChild("Farm")
@@ -466,6 +480,7 @@ local Tabs = {
     Pet_And_Egg = Window:AddTab({ Title = "Pet And Egg", Icon = "egg" }),
     Event =  Window:AddTab({ Title = "Event", Icon = "electricity" }),
     Shop = Window:AddTab({ Title = "Shop", Icon = "shopping-cart" }),
+    Misc = Window:AddTab({ Title = "Misc", Icon = "cpu" }),
     Settings = Window:AddTab({ Title = "Settings", Icon = "settings" })
 }
 
@@ -663,7 +678,7 @@ do
     local auto_harvert = Tabs.Plant:AddSection("[ 🌾 ] - Harvert")
     local selectFruits = auto_harvert:AddDropdown("Select_Fruits_Harvert", {
         Title = "Select Fruits",
-        Description = "You can select multiple fruits",
+        Description = "You can select multiple Fruits",
         Values = harvestOptions,
         Multi = true,
         Default = saved_Harvest_Fruits,
@@ -675,7 +690,7 @@ do
 
     local selectMuts = auto_harvert:AddDropdown("Select_Mutations_Harvert", {
         Title = "Select Mutations",
-        Description = "You can select multiple mutations",
+        Description = "You can select multiple Mutations",
         Values = plant_data.mutations,
         Multi = true,
         Default = saved_Harvest_Mutations,
@@ -845,7 +860,6 @@ do
             end
         end
     end
-
     local autoHarvertToggle = auto_harvert:AddToggle("Auto_Harvert", { Title = "Auto Harvert", Default = saved_Auto_Harvest })
     autoHarvertToggle:OnChanged(function(state)
         Settings.Plant.Harvert.Auto_Harvert = state
@@ -1199,16 +1213,18 @@ do
                             for _, tool in ipairs(player.Backpack:GetChildren()) do
                                 if tool:IsA("Tool") then
                                     local baseName = tool.Name:match("^(.-)%s*%[")
-                                    if baseName == petName then
+                                    if baseName == petName and tool:GetAttribute("Favorite") ~= true then
                                         targetTool = tool
                                         break
                                     end
                                 end
                             end
                             if targetTool and player.Character and player.Character:FindFirstChildOfClass("Humanoid") then
-                                player.Character:FindFirstChildOfClass("Humanoid"):EquipTool(targetTool)
-                                sellPetEvent:FireServer(targetTool)
-                                task.wait(0.5)
+                                if targetTool:GetAttribute("Favorite") ~= true then
+                                    player.Character:FindFirstChildOfClass("Humanoid"):EquipTool(targetTool)
+                                    sellPetEvent:FireServer(targetTool)
+                                    task.wait(0.5)
+                                end
                             end
                         end
                     end
@@ -1226,9 +1242,7 @@ do
         Title = "Working after Swarm Event ended"
     })
     local auto_Auto_Collect_Honey = bee_event:AddToggle("Auto_Collect_Honey", { Title = "Auto Collect Honey and Give Plant", Default = saved_Auto_Collect_Honey })
-
     local autoCollectEnabled = auto_Auto_Collect_Honey.Value
-
     auto_Auto_Collect_Honey:OnChanged(function(state)
         Settings.Event.Swarm.Auto_Collect_Honey = state
         writefile(file, HttpService:JSONEncode(Settings))
@@ -1243,7 +1257,7 @@ do
                     for _, container in ipairs({ player.Backpack, player.Character }) do
                         if container then
                             for _, tool in ipairs(container:GetChildren()) do
-                                if tool:IsA("Tool") and tool:GetAttribute("Pollinated") == true then
+                                if tool:IsA("Tool") and tool:GetAttribute("Pollinated") == true and tool:GetAttribute("Favorite") ~= true then
                                     return tool
                                 end
                             end
@@ -1255,38 +1269,34 @@ do
                 while autoCollectEnabled do
                     local tool = findPollinatedTool()
                     if tool and player.Character and player.Character:FindFirstChildOfClass("Humanoid") then
-                        local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
-                        humanoid:EquipTool(tool)
+                        if tool:GetAttribute("Favorite") ~= true then
+                            local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
+                            humanoid:EquipTool(tool)
 
-                        local text = label.Text
+                            local text = label.Text
 
-                        if not text:match("%d+:%d+") then
-                            beeEventRemote:FireServer("MachineInteract")
-                            wait(0.5)
-                            text = label.Text
+                            if not text:match("%d+:%d+") then
+                                beeEventRemote:FireServer("MachineInteract")
+                                wait(0.5)
+                                text = label.Text
 
-                            if text:match("%d+:%d+") then
+                                if text:match("%d+:%d+") then
+                                    repeat
+                                        wait(1)
+                                        text = label.Text
+                                    until (not text:match("%d+:%d+")) or (not autoCollectEnabled)
+                                end
+
+                                if not autoCollectEnabled then break end
+                                wait(1)
+                            else
                                 repeat
                                     wait(1)
                                     text = label.Text
                                 until (not text:match("%d+:%d+")) or (not autoCollectEnabled)
-                            end
-
-                            if not autoCollectEnabled then
-                                break
-                            end
-
-                            wait(1)
-                        else
-                            repeat
+                                if not autoCollectEnabled then break end
                                 wait(1)
-                                text = label.Text
-                            until (not text:match("%d+:%d+")) or (not autoCollectEnabled)
-
-                            if not autoCollectEnabled then
-                                break
                             end
-                            wait(1)
                         end
                     else
                         wait(2)
@@ -1297,7 +1307,6 @@ do
                     player.Character:FindFirstChildOfClass("Humanoid"):UnequipTools()
                 end
             end)
-
         else
             if player.Character and player.Character:FindFirstChildOfClass("Humanoid") then
                 player.Character:FindFirstChildOfClass("Humanoid"):UnequipTools()
@@ -1509,6 +1518,104 @@ do
 
                     autoBuyEggs(selected)
 
+                    task.wait(1)
+                end
+            end)
+        end
+    end)
+
+    -- [ Fovorite ]
+    local function favoriteLoop()
+        local selectedFruits = getSelected(Options.Select_Favorite_Fruits.Value)
+        local selectedMuts = getSelected(Options.Select_Favorite_Mutations.Value)
+        local selectedPets = getSelected(Options.Select_Favorite_Pets.Value)
+        local filterFruit = #selectedFruits > 0
+        local filterMut = #selectedMuts > 0
+        local filterPet= #selectedPets > 0
+
+        for _, container in ipairs({player.Backpack, player.Character}) do
+            if container then
+                for _, tool in ipairs(container:GetChildren()) do
+                    if tool:IsA("Tool") and tool:GetAttribute("Favorite") ~= true then
+                        local name = tool.Name
+                        local basePetName = name:match("^(.-)%s*%[")
+                        if filterPet and basePetName and table.find(selectedPets, basePetName) then
+                            favoriteRemote:FireServer(tool)
+                        else
+                            local mutation = name:match("^%[([^%]]+)%]")
+                            local fruitNamePart
+                            if name:match("^%[") then
+                                fruitNamePart = name:match("^%[.+%]%s*(.-)%s*%[")
+                            else
+                                fruitNamePart = name:match("^(.-)%s*%[")
+                            end
+                            if filterFruit then
+                                for _, f in ipairs(selectedFruits) do
+                                    if fruitNamePart == f then
+                                        if filterMut then
+                                            if mutation and table.find(selectedMuts, mutation) then
+                                                favoriteRemote:FireServer(tool)
+                                            end
+                                        else
+                                            favoriteRemote:FireServer(tool)
+                                        end
+                                        break
+                                    end
+                                end
+                            elseif filterMut then
+                                if mutation and table.find(selectedMuts, mutation) then
+                                    favoriteRemote:FireServer(tool)
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+    local auto_favorite = Tabs.Misc:AddSection("[ 💖 ] - Favorite")
+    local selectFavos_Fruits = auto_favorite:AddDropdown("Select_Favorite_Fruits", {
+        Title = "Select Favorite Fruits",
+        Description = "You can select multiple Fruits",
+        Values = harvestOptions,
+        Multi = true,
+        Default = saved_Favorite_Fruits,
+    })
+    selectFavos_Fruits:OnChanged(function(val)
+        Settings.Misc.Favorite.Select_Favorite_Fruits = val
+        writefile(file, HttpService:JSONEncode(Settings))
+    end)
+    local selectFavos_Mutations = auto_favorite:AddDropdown("Select_Favorite_Mutations", {
+        Title = "Select Favorite Mutations",
+        Description = "You can select multiple Mutations",
+        Values = plant_data.mutations,
+        Multi = true,
+        Default = saved_Favorite_Mutations,
+    })
+    selectFavos_Mutations:OnChanged(function(val)
+        Settings.Misc.Favorite.Select_Favorite_Mutations = val
+        writefile(file, HttpService:JSONEncode(Settings))
+    end)
+    local selectFavos_Pets = auto_favorite:AddDropdown("Select_Favorite_Pets", {
+        Title = "Select Favorite Pets",
+        Description = "You can select multiple Pets",
+        Values = egg_data.pet,
+        Multi = true,
+        Default = saved_Favorite_Pets,
+    })
+    selectFavos_Pets:OnChanged(function(val)
+        Settings.Misc.Favorite.Select_Favorite_Pets = val
+        writefile(file, HttpService:JSONEncode(Settings))
+    end)
+    local autoFavoriteToggle = auto_favorite:AddToggle("Auto_Favorite", { Title = "Auto Favorite", Default = saved_Auto_Harvest })
+    autoFavoriteToggle:OnChanged(function(state)
+        Settings.Misc.Favorite.Auto_Favorite = state
+        writefile(file, HttpService:JSONEncode(Settings))
+
+        if state then
+            task.spawn(function()
+                while autoFavoriteToggle.Value do
+                    favoriteLoop()
                     task.wait(1)
                 end
             end)
