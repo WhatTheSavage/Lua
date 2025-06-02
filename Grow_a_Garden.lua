@@ -709,39 +709,73 @@ do
         writefile(file, HttpService:JSONEncode(Settings))
     end)
 
+    local precomputedPlantPositions = {}
+    for i, locList in pairs(plant_data.locations["Plant"]) do
+        precomputedPlantPositions[i] = {}
+        for _, locStr in ipairs(locList) do
+            local nums = {}
+            for num in locStr:gmatch("([^,]+)") do
+                nums[#nums+1] = tonumber(num)
+            end
+            precomputedPlantPositions[i][#precomputedPlantPositions[i]+1] = Vector3.new(nums[1], nums[2], nums[3])
+        end
+    end
+
+    local function findSeedTool(seedName)
+        local lowerName = seedName:lower()
+        for _, t in ipairs(player.Backpack:GetChildren()) do
+            if t:IsA("Tool") and t.Name:lower():match("^" .. lowerName .. "%s*seed") then
+                return t
+            end
+        end
+        for _, t in ipairs(player.Character:GetChildren()) do
+            if t:IsA("Tool") and t.Name:lower():match("^" .. lowerName .. "%s*seed") then
+                return t
+            end
+        end
+        return nil
+    end
+
+    local function getMyFarmIndex()
+        local farmParent = workspace:FindFirstChild("Farm")
+        if not farmParent then return nil end
+        for _, farmFolder in ipairs(farmParent:GetChildren()) do
+            local important = farmFolder:FindFirstChild("Important")
+            if important then
+                local dataFolder = important:FindFirstChild("Data")
+                if dataFolder and dataFolder:FindFirstChild("Owner") and dataFolder:FindFirstChild("Farm_Number") then
+                    if dataFolder.Owner.Value == player.Name then
+                        local val = dataFolder.Farm_Number.Value
+                        local idx = (type(val) == "string") and tonumber(val) or val
+                        if type(idx) == "number" then
+                            return idx
+                        end
+                    end
+                end
+            end
+        end
+        return nil
+    end
+
     local auto_plant_toggle = auto_plant:AddToggle("Auto_Plant", { Title = "Auto Plant", Default = saved_Auto_Plant })
     auto_plant_toggle:OnChanged(function(on)
         Settings.Plant.Plant.Auto_Plant = on
         writefile(file, HttpService:JSONEncode(Settings))
 
         if on then
+            local idx = getMyFarmIndex()
+            if type(idx) ~= "number" then
+                task.wait(0.5)
+                auto_plant_toggle:Set(false)
+                return
+            end
+
             task.spawn(function()
                 while auto_plant_toggle.Value do
-                    local farmFolder = getPlayerFarmFolder()
-                    if not farmFolder then
-                        task.wait(0.1)
-                        continue
-                    end
-
-                    local farmNumberVal = farmFolder.Important.Data:FindFirstChild("Farm_Number")
-                    local idx = nil
-                    if farmNumberVal then
-                        if typeof(farmNumberVal.Value) == "string" then
-                            idx = tonumber(farmNumberVal.Value)
-                        else
-                            idx = farmNumberVal.Value
-                        end
-                    end
-
-                    if type(idx) ~= "number" then
-                        task.wait(0.1)
-                        continue
-                    end
-
                     local seeds = {}
                     for name, enabled in pairs(Options.Select_Seed_Plant.Value) do
                         if enabled and type(name) == "string" then
-                            table.insert(seeds, name)
+                            seeds[#seeds+1] = name
                         end
                     end
 
@@ -751,42 +785,29 @@ do
                     end
 
                     for _, seedName in ipairs(seeds) do
-                        local function findSeedTool(seedName)
-                            local lowerName = seedName:lower()
-                            for _, t in ipairs(player.Backpack:GetChildren()) do
-                                if t:IsA("Tool") and t.Name:lower():match("^" .. lowerName .. "%s*seed") then
-                                    return t
-                                end
-                            end
-                            for _, t in ipairs(player.Character:GetChildren()) do
-                                if t:IsA("Tool") and t.Name:lower():match("^" .. lowerName .. "%s*seed") then
-                                    return t
-                                end
-                            end
-                            return nil
-                        end
-
                         local tool = findSeedTool(seedName)
                         if tool and player.Character and player.Character:FindFirstChildOfClass("Humanoid") then
-                            player.Character:FindFirstChildOfClass("Humanoid"):EquipTool(tool)
-                            task.wait(0.01)
+                            local currentTool = player.Character:FindFirstChildOfClass("Humanoid"):FindFirstChildOfClass("Tool")
+                            if currentTool ~= tool then
+                                player.Character:FindFirstChildOfClass("Humanoid"):EquipTool(tool)
+                                task.wait(0.05)
+                            end
                         end
 
-                        local positions = plant_data.locations["Plant"][idx]
+                        local positions = precomputedPlantPositions[idx]
                         if positions then
-                            for _, locStr in ipairs(positions) do
-                                local nums = {}
-                                for num in locStr:gmatch("([^,]+)") do
-                                    table.insert(nums, tonumber(num))
-                                end
-                                local pos = Vector3.new(nums[1], nums[2], nums[3])
+                            for _, pos in ipairs(positions) do
                                 plantRemote:FireServer(pos, seedName)
                                 task.wait(0.01)
                             end
                         end
                     end
 
-                    task.wait(0.01)
+                    task.wait(0.05)
+                end
+
+                if player.Character and player.Character:FindFirstChildOfClass("Humanoid") then
+                    player.Character:FindFirstChildOfClass("Humanoid"):UnequipTools()
                 end
             end)
         else
@@ -795,7 +816,6 @@ do
             end
         end
     end)
-
 
     -- [ Harvert ]
     local function getSelected(tbl)
@@ -807,7 +827,6 @@ do
         end
         return t
     end
-
     local auto_harvert = Tabs.Plant:AddSection("[ 🌾 ] - Harvert")
     local selectFruits = auto_harvert:AddDropdown("Select_Fruits_Harvert", {
         Title = "Select Fruits To Harvert",
@@ -1014,20 +1033,73 @@ do
         sellMode = val
     end)
 
-    local sellPropertyConn
+    local sellPropertyConns = {}
     local sellChildAddedConn
     local sellChildRemovedConn
+    local origCFrame
+    local isWarping = false
 
     local autosellToggle = auto_sell:AddToggle("Auto_Sell", { Title = "Auto Sell", Default = saved_Auto_Sell })
+
+    local function handleSellText(text)
+        if string.find(text, "Max backpack space! Go sell!") and not isWarping then
+            isWarping = true
+            local char = player.Character
+            local hrp  = char and char:FindFirstChild("HumanoidRootPart")
+            if hrp then
+                origCFrame = hrp.CFrame
+                local sellCFrame = CFrame.new(
+                    86.5854721, 2.97185373, 0.426784277,
+                    1.7411641e-16, 1.07745741e-07, -1,
+                    -1.02299481e-10, 1, 1.07745741e-07,
+                    1, 1.02299481e-10, 1.85138744e-16
+                )
+                task.wait(1)
+                hrp.CFrame = sellCFrame
+                task.wait(0.5)
+                SellInventoryRemote:FireServer()
+            end
+        end
+    end
+
+    local function onChildAdded(child)
+        if child.Name == "Notification_UI" then
+            local label = child:WaitForChild("TextLabel")
+            local conn = label:GetPropertyChangedSignal("Text"):Connect(function()
+                if not autosellToggle.Value then return end
+                handleSellText(label.Text)
+            end)
+            sellPropertyConns[child] = conn
+            handleSellText(label.Text)
+        end
+    end
+
+    local function onChildRemoved(child)
+        if child.Name == "Notification_UI" then
+            local conn = sellPropertyConns[child]
+            if conn then
+                conn:Disconnect()
+                sellPropertyConns[child] = nil
+            end
+            if isWarping and origCFrame then
+                local char = player.Character
+                local hrp  = char and char:FindFirstChild("HumanoidRootPart")
+                if hrp then
+                    task.wait(1)
+                    hrp.CFrame = origCFrame
+                end
+                task.wait(1)
+                origCFrame = nil
+                isWarping = false
+            end
+        end
+    end
+
     autosellToggle:OnChanged(function(state)
         Settings.Plant.Auto_Sell.Auto_Sell = state
         writefile(file, HttpService:JSONEncode(Settings))
 
         if not state then
-            if sellPropertyConn then
-                sellPropertyConn:Disconnect()
-                sellPropertyConn = nil
-            end
             if sellChildAddedConn then
                 sellChildAddedConn:Disconnect()
                 sellChildAddedConn = nil
@@ -1036,17 +1108,20 @@ do
                 sellChildRemovedConn:Disconnect()
                 sellChildRemovedConn = nil
             end
+            for child, conn in pairs(sellPropertyConns) do
+                conn:Disconnect()
+            end
+            sellPropertyConns = {}
             return
         end
 
         if sellMode == "Every 30 seconds" then
-            local orig = nil
             spawn(function()
                 while autosellToggle.Value do
                     local char = player.Character
                     local hrp  = char and char:FindFirstChild("HumanoidRootPart")
                     if hrp then
-                        orig = hrp.CFrame
+                        origCFrame = hrp.CFrame
                         local sellCFrame = CFrame.new(
                             86.5854721, 2.97185373, 0.426784277,
                             1.7411641e-16, 1.07745741e-07, -1,
@@ -1058,83 +1133,31 @@ do
                         task.wait(0.5)
                         SellInventoryRemote:FireServer()
                         task.wait(2.5)
-                        hrp.CFrame = orig
-                        orig = nil
+                        hrp.CFrame = origCFrame
+                        origCFrame = nil
                     end
                     task.wait(30)
                 end
             end)
         elseif sellMode == "Inventory Max" then
             local frame = player.PlayerGui:WaitForChild("Top_Notification"):WaitForChild("Frame")
-            local origCFrame = nil
-            local isWarping = false
-
-            local function connectLabel(label)
-                if sellPropertyConn then
-                    sellPropertyConn:Disconnect()
-                    sellPropertyConn = nil
-                end
-
-                sellPropertyConn = label:GetPropertyChangedSignal("Text"):Connect(function()
-                    if not autosellToggle.Value then return end
-
-                    local text = label.Text
-                    if string.find(text, "Max backpack space! Go sell!") and not isWarping then
-                        isWarping = true
-                        local char = player.Character
-                        local hrp  = char and char:FindFirstChild("HumanoidRootPart")
-                        if hrp then
-                            origCFrame = hrp.CFrame
-                            local sellCFrame = CFrame.new(
-                                86.5854721, 2.97185373, 0.426784277,
-                                1.7411641e-16, 1.07745741e-07, -1,
-                                -1.02299481e-10, 1, 1.07745741e-07,
-                                1, 1.02299481e-10, 1.85138744e-16
-                            )
-                            task.wait(1)
-                            hrp.CFrame = sellCFrame
-                            task.wait(0.5)
-                            SellInventoryRemote:FireServer()
-                        end
-                    end
-                end)
-            end
-
-            local function onChildRemoved(child)
-                if child.Name == "Notification_UI" and isWarping and origCFrame then
-                    local char = player.Character
-                    local hrp  = char and char:FindFirstChild("HumanoidRootPart")
-                    if hrp then
-                        task.wait(1)
-                        hrp.CFrame = origCFrame
-                    end
-                    task.wait(1)
-                    origCFrame = nil
-                    isWarping = false
-                end
-            end
 
             if sellChildAddedConn then
                 sellChildAddedConn:Disconnect()
                 sellChildAddedConn = nil
             end
-            sellChildAddedConn = frame.ChildAdded:Connect(function(child)
-                if child.Name == "Notification_UI" then
-                    local label = child:WaitForChild("TextLabel")
-                    connectLabel(label)
-                end
-            end)
-
             if sellChildRemovedConn then
                 sellChildRemovedConn:Disconnect()
                 sellChildRemovedConn = nil
             end
+
+            sellChildAddedConn = frame.ChildAdded:Connect(onChildAdded)
             sellChildRemovedConn = frame.ChildRemoved:Connect(onChildRemoved)
 
-            local existing = frame:FindFirstChild("Notification_UI")
-            if existing then
-                local label = existing:WaitForChild("TextLabel")
-                connectLabel(label)
+            for _, existingChild in ipairs(frame:GetChildren()) do
+                if existingChild.Name == "Notification_UI" then
+                    onChildAdded(existingChild)
+                end
             end
         end
     end)
