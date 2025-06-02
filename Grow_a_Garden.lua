@@ -1,19 +1,5 @@
 local Notification = require(game:GetService("ReplicatedStorage").Modules.Notification)
 
-if _G.Execute then
-    _G.Execute = _G.Execute + 1
-else
-    _G.Execute = 1
-end
-
-if _G.Execute >= 2 then
-    local player = game.Players.LocalPlayer
-    if player then
-        Notification:CreateNotification("You cannot execute the script twice.")
-        return
-    end
-end
-
 local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
 local InterfaceManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/InterfaceManager.lua"))()
 
@@ -942,7 +928,7 @@ do
         local filterMut = #selectedMuts > 0
 
         for _, plant in ipairs(PlantsPhysical:GetChildren()) do
-            task.wait(0.1)
+            task.wait(0.01)
 
             local growFolder = plant:FindFirstChild("Grow")
             local ageVal     = growFolder and growFolder:FindFirstChild("Age")
@@ -1074,7 +1060,7 @@ do
             task.spawn(function()
                 while autoHarvertToggle.Value do
                     harvestLoop()
-                    task.wait(1)
+                    task.wait(0.01)
                 end
             end)
         end
