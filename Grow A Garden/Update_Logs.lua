@@ -1,9 +1,3 @@
-_G.Main = {
-    hub_name = "PrimeXploit",
-    owner = "PrimeX_GG",
-    discord_link = "https://discord.gg/dbnuRpY2"
-}
-
 _G.script_setting = {
     Owner = _G.Main.owner,
     Name = "Grow a Garden",
