@@ -1,77 +1,31 @@
 local Notification = require(game:GetService("ReplicatedStorage").Modules.Notification)
 
-if _G.Execute then
-    _G.Execute = _G.Execute + 1
-else
-    _G.Execute = 1
-end
-
-if _G.Execute >= 2 then
-    local player = game.Players.LocalPlayer
-    if player then
-        Notification:CreateNotification("You cannot execute the script twice.")
-        return
-    end
-end
-
 local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
 local InterfaceManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/InterfaceManager.lua"))()
 
-local updateLogs = {
-    {
-        Date = "2 / 6 / 25",
-        Content = {
-            ["Added"] = {
-                "Auto feed pets"
-            },
-            ["Remove"] = {
+local gameInfo = _G.game[tostring(game.PlaceId)]
+local updateLogs = nil
+local update = nil
+local scriptName = nil
+local discord_link = nil
 
-            },
-            ["Fixed"] = {
-                "Auto sell fruit not working [ Mobile ]"
-            }
-        }
-    },
-    {
-        Date = "1 / 6 / 25",
-        Content = {
-            ["Added"] = {
-                "Auto sell pet",
-                "Auto Swarm event",
-                "Auto favorite"
-            },
-            ["Remove"] = {
-                "Auto Night event"
-            },
-            ["Fixed"] = {
-                "Harvest very laggy",
-                "Auto buy egg not working"
-            }
-        }
-    },
-    {
-        Date = "31 / 5 / 25",
-        Content = {
-            ["Added"] = {
+if gameInfo and gameInfo.Update_Logs and gameInfo.Name and gameInfo.Script and _G.Discord_Link then
+    updateLogs = gameInfo.Update_Logs.Data
+    update = gameInfo.Update_Logs.Date or "N/A"
+    scriptName = gameInfo.Name
+    discord_link = _G.Discord_Link
+else
+    updateLogs = {}
+    update = "N/A"
+    scriptName = {}
+    discord_link = _G.Discord_Link
+end
 
-            },
-            ["Remove"] = {
+local teamInfo = _G.team or {}
+local owner = teamInfo.Owner or {}
+local staff  = teamInfo.Staff or {}
 
-            },
-            ["Fixed"] = {
-                "Can't place egg",
-                "Can't plant seed",
-                "Can't harvest"
-            }
-        }
-    },
-}
-
-local owner = "PrimeX_GG"
 local hub = "PrimeXploit"
-local scriptName = "Grow a Garden"
-local update = "2 / 6 / 25"
-local discord_link = "https://discord.gg/dbnuRpY2"
 
 local folder = hub
 local file = folder .. "/Grow_a_Garden.json"
@@ -920,6 +874,41 @@ do
         writefile(file, HttpService:JSONEncode(Settings))
     end)
 
+    local inventoryFull = false
+
+    local function onNotifText(text)
+        if string.find(text, "Max backpack space! Go sell!") then
+            inventoryFull = true
+        end
+    end
+
+    local function setupInventoryListener()
+        local topNotifGui = player.PlayerGui:FindFirstChild("Top_Notification")
+                           or player.PlayerGui:FindFirstChild("TopNotification")
+        if not topNotifGui then return end
+
+        local frame = topNotifGui:FindFirstChild("Frame") or topNotifGui
+
+        for _, child in ipairs(frame:GetChildren()) do
+            local label = child:FindFirstChild("TextLabel") or (child:IsA("TextLabel") and child)
+            if label then
+                label:GetPropertyChangedSignal("Text"):Connect(function()
+                    onNotifText(label.Text)
+                end)
+                onNotifText(label.Text)
+            end
+        end
+
+        frame.ChildAdded:Connect(function(child)
+            local label = child:FindFirstChild("TextLabel") or (child:IsA("TextLabel") and child)
+            if label then
+                label:GetPropertyChangedSignal("Text"):Connect(function()
+                    onNotifText(label.Text)
+                end)
+                onNotifText(label.Text)
+            end
+        end)
+    end
     local function harvestLoop()
         local farmFolder = getPlayerFarmFolder()
         if not farmFolder then
@@ -942,7 +931,7 @@ do
         local filterMut = #selectedMuts > 0
 
         for _, plant in ipairs(PlantsPhysical:GetChildren()) do
-            task.wait(0.1)
+            task.wait(0.01)
 
             local growFolder = plant:FindFirstChild("Grow")
             local ageVal     = growFolder and growFolder:FindFirstChild("Age")
@@ -1070,11 +1059,15 @@ do
     autoHarvertToggle:OnChanged(function(state)
         Settings.Plant.Harvert.Auto_Harvert = state
         writefile(file, HttpService:JSONEncode(Settings))
+
+        inventoryFull = false
+        setupInventoryListener()
+
         if state then
             task.spawn(function()
-                while autoHarvertToggle.Value do
+                while autoHarvertToggle.Value and not inventoryFull do
                     harvestLoop()
-                    task.wait(1)
+                    task.wait(0.01)
                 end
             end)
         end
@@ -1112,6 +1105,7 @@ do
     local function handleSellText(text)
         if string.find(text, "Max backpack space! Go sell!") and not isWarping then
             isWarping = true
+
             local char = player.Character
             local hrp  = char and char:FindFirstChild("HumanoidRootPart")
             if hrp then
@@ -1131,19 +1125,20 @@ do
     end
 
     local function onChildAdded(child)
-        if child.Name == "Notification_UI" then
-            local label = child:WaitForChild("TextLabel")
-            local conn = label:GetPropertyChangedSignal("Text"):Connect(function()
-                if not autosellToggle.Value then return end
-                handleSellText(label.Text)
-            end)
-            sellPropertyConns[child] = conn
+        local label = child:FindFirstChild("TextLabel") or (child:IsA("TextLabel") and child)
+        if not label then return end
+
+        local conn = label:GetPropertyChangedSignal("Text"):Connect(function()
+            if not autosellToggle.Value then return end
             handleSellText(label.Text)
-        end
+        end)
+        sellPropertyConns[child] = conn
+
+        handleSellText(label.Text)
     end
 
     local function onChildRemoved(child)
-        if child.Name == "Notification_UI" then
+        if child.Name == "Notification_UI" or child:IsA("Frame") or child:IsA("TextLabel") then
             local conn = sellPropertyConns[child]
             if conn then
                 conn:Disconnect()
@@ -1200,7 +1195,7 @@ do
                         hrp.CFrame = sellCFrame
                         task.wait(0.5)
                         SellInventoryRemote:FireServer()
-                        task.wait(2.5)
+                        task.wait(1)
                         hrp.CFrame = origCFrame
                         origCFrame = nil
                     end
@@ -1208,7 +1203,11 @@ do
                 end
             end)
         elseif sellMode == "Inventory Max" then
-            local frame = player.PlayerGui:WaitForChild("Top_Notification"):WaitForChild("Frame")
+            local topNotifGui = player.PlayerGui:FindFirstChild("Top_Notification")
+                             or player.PlayerGui:FindFirstChild("TopNotification")
+            if not topNotifGui then return end
+
+            local frame = topNotifGui:FindFirstChild("Frame") or topNotifGui
 
             if sellChildAddedConn then
                 sellChildAddedConn:Disconnect()
@@ -1223,7 +1222,10 @@ do
             sellChildRemovedConn = frame.ChildRemoved:Connect(onChildRemoved)
 
             for _, existingChild in ipairs(frame:GetChildren()) do
-                if existingChild.Name == "Notification_UI" then
+                if existingChild.Name == "Notification_UI"
+                   or existingChild:IsA("TextLabel")
+                   or existingChild:IsA("Frame")
+                then
                     onChildAdded(existingChild)
                 end
             end
@@ -2145,12 +2147,21 @@ end)
 local function onPlayerAdded(player)
     if player.Name == owner then
         Notification:CreateNotification("The owner of " .. hub .. " just joined your server")
+    elseif table.find(staff, player.Name) then
+        Notification:CreateNotification("The staff of " .. player.Name .. " just joined your server")
     end
 end
 
 Players.PlayerAdded:Connect(onPlayerAdded)
 
-local existing = Players:FindFirstChild(owner)
-if existing then
+local existingOwner = Players:FindFirstChild(owner)
+if existingOwner then
     Notification:CreateNotification("The owner of " .. hub .. " is already in the server")
+end
+
+for _, staffName in ipairs(staff) do
+    local existingStaff = Players:FindFirstChild(staffName)
+    if existingStaff then
+        Notification:CreateNotification("The staff of " .. staffName .. " is already in the server")
+    end
 end
