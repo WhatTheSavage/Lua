@@ -1522,7 +1522,7 @@ do
                         displayName = petFrame.PET_NAME.Text
                     end
                 end
-                local entryName = displayName .. " - [ " .. modelName .. "] "
+                local entryName = displayName .. " - [ " .. modelName .. " ] "
                 table.insert(petOptions, entryName)
                 petMap[entryName] = petUUID
             end
