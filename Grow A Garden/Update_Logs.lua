@@ -6,7 +6,7 @@ _G.script_setting = {
     Save_File = "/Grow_a_Garden.json",
 
     Update_Date = "2 / 6 / 25",
-    Update_logs = {
+    Update_Logs = {
         {
             Date = "2 / 6 / 25",
             Content = {
