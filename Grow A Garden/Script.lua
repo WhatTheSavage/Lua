@@ -3,32 +3,16 @@ local Notification = require(game:GetService("ReplicatedStorage").Modules.Notifi
 local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
 local InterfaceManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/InterfaceManager.lua"))()
 
-local gameInfo = _G.game[tostring(game.PlaceId)]
-local updateLogs = nil
-local update = nil
-local scriptName = nil
-local discord_link = nil
+local updateLogs = _G.script_setting.Update_Logs
 
-if gameInfo and gameInfo.Update_Logs and gameInfo.Name and gameInfo.Script and _G.Discord_Link then
-    updateLogs = gameInfo.Update_Logs.Data
-    update = gameInfo.Update_Logs.Date or "N/A"
-    scriptName = gameInfo.Name
-    discord_link = _G.Discord_Link
-else
-    updateLogs = {}
-    update = "N/A"
-    scriptName = {}
-    discord_link = _G.Discord_Link
-end
-
-local teamInfo = _G.team or {}
-local owner = teamInfo.Owner or {}
-local staff  = teamInfo.Staff or {}
-
-local hub = "PrimeXploit"
+local owner = _G.script_setting.Owner
+local hub = _G.script_setting.Hub_Name
+local scriptName = _G.script_setting.Name
+local update = _G.script_setting.Update_Date
+local discord_link = _G.script_setting.Discord_Link
 
 local folder = hub
-local file = folder .. "/Grow_a_Garden.json"
+local file = folder .. _G.script_setting.Save_File
 
 local HttpService = game:GetService("HttpService")
 
@@ -2147,21 +2131,12 @@ end)
 local function onPlayerAdded(player)
     if player.Name == owner then
         Notification:CreateNotification("The owner of " .. hub .. " just joined your server")
-    elseif table.find(staff, player.Name) then
-        Notification:CreateNotification("The staff of " .. player.Name .. " just joined your server")
     end
 end
 
 Players.PlayerAdded:Connect(onPlayerAdded)
 
-local existingOwner = Players:FindFirstChild(owner)
-if existingOwner then
+local existing = Players:FindFirstChild(owner)
+if existing then
     Notification:CreateNotification("The owner of " .. hub .. " is already in the server")
-end
-
-for _, staffName in ipairs(staff) do
-    local existingStaff = Players:FindFirstChild(staffName)
-    if existingStaff then
-        Notification:CreateNotification("The staff of " .. staffName .. " is already in the server")
-    end
 end
