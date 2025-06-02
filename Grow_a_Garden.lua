@@ -906,6 +906,41 @@ do
         writefile(file, HttpService:JSONEncode(Settings))
     end)
 
+    local inventoryFull = false
+
+    local function onNotifText(text)
+        if string.find(text, "Max backpack space! Go sell!") then
+            inventoryFull = true
+        end
+    end
+
+    local function setupInventoryListener()
+        local topNotifGui = player.PlayerGui:FindFirstChild("Top_Notification")
+                           or player.PlayerGui:FindFirstChild("TopNotification")
+        if not topNotifGui then return end
+
+        local frame = topNotifGui:FindFirstChild("Frame") or topNotifGui
+
+        for _, child in ipairs(frame:GetChildren()) do
+            local label = child:FindFirstChild("TextLabel") or (child:IsA("TextLabel") and child)
+            if label then
+                label:GetPropertyChangedSignal("Text"):Connect(function()
+                    onNotifText(label.Text)
+                end)
+                onNotifText(label.Text)
+            end
+        end
+
+        frame.ChildAdded:Connect(function(child)
+            local label = child:FindFirstChild("TextLabel") or (child:IsA("TextLabel") and child)
+            if label then
+                label:GetPropertyChangedSignal("Text"):Connect(function()
+                    onNotifText(label.Text)
+                end)
+                onNotifText(label.Text)
+            end
+        end)
+    end
     local function harvestLoop()
         local farmFolder = getPlayerFarmFolder()
         if not farmFolder then
@@ -1056,9 +1091,13 @@ do
     autoHarvertToggle:OnChanged(function(state)
         Settings.Plant.Harvert.Auto_Harvert = state
         writefile(file, HttpService:JSONEncode(Settings))
+
+        inventoryFull = false
+        setupInventoryListener()
+
         if state then
             task.spawn(function()
-                while autoHarvertToggle.Value do
+                while autoHarvertToggle.Value and not inventoryFull do
                     harvestLoop()
                     task.wait(0.01)
                 end
@@ -1098,6 +1137,7 @@ do
     local function handleSellText(text)
         if string.find(text, "Max backpack space! Go sell!") and not isWarping then
             isWarping = true
+
             local char = player.Character
             local hrp  = char and char:FindFirstChild("HumanoidRootPart")
             if hrp then
@@ -1117,19 +1157,20 @@ do
     end
 
     local function onChildAdded(child)
-        if child.Name == "Notification_UI" then
-            local label = child:WaitForChild("TextLabel")
-            local conn = label:GetPropertyChangedSignal("Text"):Connect(function()
-                if not autosellToggle.Value then return end
-                handleSellText(label.Text)
-            end)
-            sellPropertyConns[child] = conn
+        local label = child:FindFirstChild("TextLabel") or (child:IsA("TextLabel") and child)
+        if not label then return end
+
+        local conn = label:GetPropertyChangedSignal("Text"):Connect(function()
+            if not autosellToggle.Value then return end
             handleSellText(label.Text)
-        end
+        end)
+        sellPropertyConns[child] = conn
+
+        handleSellText(label.Text)
     end
 
     local function onChildRemoved(child)
-        if child.Name == "Notification_UI" then
+        if child.Name == "Notification_UI" or child:IsA("Frame") or child:IsA("TextLabel") then
             local conn = sellPropertyConns[child]
             if conn then
                 conn:Disconnect()
@@ -1186,7 +1227,7 @@ do
                         hrp.CFrame = sellCFrame
                         task.wait(0.5)
                         SellInventoryRemote:FireServer()
-                        task.wait(2.5)
+                        task.wait(1)
                         hrp.CFrame = origCFrame
                         origCFrame = nil
                     end
@@ -1194,7 +1235,11 @@ do
                 end
             end)
         elseif sellMode == "Inventory Max" then
-            local frame = player.PlayerGui:WaitForChild("Top_Notification"):WaitForChild("Frame")
+            local topNotifGui = player.PlayerGui:FindFirstChild("Top_Notification")
+                             or player.PlayerGui:FindFirstChild("TopNotification")
+            if not topNotifGui then return end
+
+            local frame = topNotifGui:FindFirstChild("Frame") or topNotifGui
 
             if sellChildAddedConn then
                 sellChildAddedConn:Disconnect()
@@ -1209,7 +1254,10 @@ do
             sellChildRemovedConn = frame.ChildRemoved:Connect(onChildRemoved)
 
             for _, existingChild in ipairs(frame:GetChildren()) do
-                if existingChild.Name == "Notification_UI" then
+                if existingChild.Name == "Notification_UI"
+                   or existingChild:IsA("TextLabel")
+                   or existingChild:IsA("Frame")
+                then
                     onChildAdded(existingChild)
                 end
             end
