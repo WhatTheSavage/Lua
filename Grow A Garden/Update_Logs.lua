@@ -5,7 +5,7 @@ _G.script_setting = {
     Discord_Link = _G.Main.discord_link,
     Save_File = "/Grow_a_Garden.json",
 
-    Update_Date = "",
+    Update_Date = "2 / 6 / 25",
     Update_logs = {
         {
             Date = "2 / 6 / 25",
