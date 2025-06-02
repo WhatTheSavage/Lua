@@ -1,3 +1,9 @@
+_G.Main = {
+    hub_name = "PrimeXploit",
+    owner = "PrimeX_GG",
+    discord_link = "https://discord.gg/dbnuRpY2"
+}
+
 local player = game.Players.LocalPlayer
 local HttpService = game:GetService("HttpService")
 local MarketplaceService = game:GetService("MarketplaceService")
