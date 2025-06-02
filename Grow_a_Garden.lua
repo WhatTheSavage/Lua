@@ -19,16 +19,51 @@ local InterfaceManager = loadstring(game:HttpGet("https://raw.githubusercontent.
 
 local updateLogs = {
     {
-        Title   = "2 / 6 / 25",
-        Content = "#Added\n - Auto Feed Pet\n#Fixed\n - Auto Sell not working on mobile"
+        Date = "2 / 6 / 25",
+        Content = {
+            ["Added"] = {
+                "Auto feed pets"
+            },
+            ["Remove"] = {
+
+            },
+            ["Fixed"] = {
+                "Auto sell fruit not working [ Mobile ]"
+            }
+        }
     },
     {
-        Title   = "1 / 6 / 25",
-        Content = "#Added\n - Auto Sell Pet\n - Swarm Event\n - Auto Favorite\n#Remove\n - Night Event\n#Fixed\n - Harvert very lag\n - Auto Buy Egg not working"
+        Date = "1 / 6 / 25",
+        Content = {
+            ["Added"] = {
+                "Auto sell pet",
+                "Auto Swarm event",
+                "Auto favorite"
+            },
+            ["Remove"] = {
+                "Auto Night event"
+            },
+            ["Fixed"] = {
+                "Harvest very laggy",
+                "Auto buy egg not working"
+            }
+        }
     },
     {
-        Title   = "31 / 5 / 25",
-        Content = "#Fixed\n - Can't Place Egg\n - Can't Plant Seed\n - Can't Harvert"
+        Date = "31 / 5 / 25",
+        Content = {
+            ["Added"] = {
+
+            },
+            ["Remove"] = {
+
+            },
+            ["Fixed"] = {
+                "Can't place egg",
+                "Can't plant seed",
+                "Can't harvest"
+            }
+        }
     },
 }
 
@@ -647,11 +682,44 @@ do
         Title = "Executor : " .. (identifyexecutor and identifyexecutor() or "Unknown")
     })
     local update_log = Tabs.Log:AddSection("[ 🧾 ] - Update log")
-    for _, logEntry in ipairs(updateLogs) do
-        update_log:AddParagraph({
-            Title   = logEntry.Title,
-            Content = logEntry.Content
-        })
+    for _, entry in ipairs(updateLogs) do
+        local contentStr = ""
+
+        local sectionOrder = { "Added", "Remove", "Fixed" }
+
+        local lastIndexWithContent = 0
+        for idx, section in ipairs(sectionOrder) do
+            if entry.Content[section] and #entry.Content[section] > 0 then
+                lastIndexWithContent = idx
+            end
+        end
+
+        if lastIndexWithContent == 0 then
+            update_log:AddParagraph({
+                Title   = entry.Date,
+                Content = ""
+            })
+        else
+            for idx, section in ipairs(sectionOrder) do
+                local lines = entry.Content[section]
+                if lines and #lines > 0 then
+                    contentStr = contentStr .. "# " .. section .. "\n"
+                    for _, line in ipairs(lines) do
+                        contentStr = contentStr .. "- " .. line .. "\n"
+                    end
+                    if idx < lastIndexWithContent then
+                        contentStr = contentStr .. "\n"
+                    end
+                end
+            end
+
+            contentStr = contentStr:gsub("\n$", "")
+
+            update_log:AddParagraph({
+                Title   = entry.Date,
+                Content = contentStr
+            })
+        end
     end
 
 
