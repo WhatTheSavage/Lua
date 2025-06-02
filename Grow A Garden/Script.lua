@@ -1504,22 +1504,32 @@ do
         Settings.Pet.Auto_Feed_Pet.Select_Fruit_To_Feed = value
         writefile(file, HttpService:JSONEncode(Settings))
     end)
+    local petMap = {}
     local function updateOwnedPets()
-        local ownedPetNames = {}
+        petOptions = {}
+        petMap = {}
+        local gui = player.PlayerGui:FindFirstChild("ActivePetUI")
+        local scrolling = gui and gui.Frame.Main:FindFirstChild("ScrollingFrame")
         for _, petContainer in ipairs(workspace:WaitForChild("PetsPhysical"):GetChildren()) do
-            local ownerName = petContainer:GetAttribute("OWNER")
-            if ownerName == player.Name then
+            if petContainer:GetAttribute("OWNER") == player.Name then
                 local innerModel = petContainer:FindFirstChildWhichIsA("Model")
-                local petName = innerModel and innerModel.Name or petContainer.Name
-                table.insert(ownedPetNames, petName)
+                local modelName = innerModel and innerModel.Name or petContainer.Name
+                local petUUID = petContainer:GetAttribute("UUID")
+                local displayName = modelName
+                if scrolling and petUUID then
+                    local petFrame = scrolling:FindFirstChild(petUUID)
+                    if petFrame and petFrame:FindFirstChild("PET_NAME") then
+                        displayName = petFrame.PET_NAME.Text
+                    end
+                end
+                local entryName = displayName .. " [" .. modelName .. "]"
+                table.insert(petOptions, entryName)
+                petMap[entryName] = petUUID
             end
         end
-
-        select_pet_to_feed:SetValues(ownedPetNames)
-
+        select_pet_to_feed:SetValues(petOptions)
         for i = #saved_Pet_To_Feed, 1, -1 do
-            local prev = saved_Pet_To_Feed[i]
-            if not table.find(ownedPetNames, prev) then
+            if not table.find(petOptions, saved_Pet_To_Feed[i]) then
                 table.remove(saved_Pet_To_Feed, i)
             end
         end
@@ -1544,38 +1554,19 @@ do
         if on then
             task.spawn(function()
                 while auto_feed_pet_toggle.Value do
-                    local petsToFeed = {}
-                    for petName, enabled in pairs(Options.Select_Pets_To_Feed.Value) do
-                        if enabled then
-                            table.insert(petsToFeed, petName)
-                        end
-                    end
-
                     local fruitsToFeed = {}
                     for fruitName, enabled in pairs(Options.Select_Fruits_To_Feed.Value) do
                         if enabled then
                             table.insert(fruitsToFeed, fruitName)
                         end
                     end
-
-                    if #petsToFeed == 0 or #fruitsToFeed == 0 then
+                    if #saved_Pet_To_Feed == 0 or #fruitsToFeed == 0 then
                         task.wait(1)
                         continue
                     end
 
-                    for _, petName in ipairs(petsToFeed) do
-                        local petUUID = nil
-                        for _, petContainer in ipairs(workspace:WaitForChild("PetsPhysical"):GetChildren()) do
-                            if petContainer:GetAttribute("OWNER") == player.Name then
-                                local innerModel = petContainer:FindFirstChildWhichIsA("Model")
-                                local nameToCheck = innerModel and innerModel.Name or petContainer.Name
-                                if nameToCheck == petName then
-                                    petUUID = petContainer:GetAttribute("UUID")
-                                    break
-                                end
-                            end
-                        end
-
+                    for _, entryName in ipairs(saved_Pet_To_Feed) do
+                        local petUUID = petMap[entryName]
                         if not petUUID then
                             continue
                         end
@@ -1584,22 +1575,18 @@ do
                         if not gui then
                             continue
                         end
-
                         local scrolling = gui.Frame.Main:FindFirstChild("ScrollingFrame")
                         if not scrolling then
                             continue
                         end
-
                         local petFrame = scrolling:FindFirstChild(petUUID)
                         if not petFrame then
                             continue
                         end
-
                         local stats = petFrame:FindFirstChild("PetStats")
                         if not stats then
                             continue
                         end
-
                         local hungerBar = stats:FindFirstChild("HUNGER") and stats.HUNGER:FindFirstChild("HUNGER_BAR")
                         if not hungerBar then
                             continue
