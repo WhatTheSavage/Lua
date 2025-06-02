@@ -12,7 +12,7 @@ local update = _G.script_setting.Update_Date
 local discord_link = _G.script_setting.Discord_Link
 
 local folder = hub
-local file = folder .. _G.script_setting.Save_File
+local file = folder .. "/Grow_a_Garden.json"
 
 local HttpService = game:GetService("HttpService")
 
