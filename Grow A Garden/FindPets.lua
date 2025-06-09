@@ -1,8 +1,3 @@
-_G.TargetNames = {
-    "Disco Bee",
-    "Butterfly"
-}
-
 local DataSer = require(game:GetService("ReplicatedStorage").Modules.DataService)
 local Players = game:GetService("Players")
 local localPlayer = Players.LocalPlayer
