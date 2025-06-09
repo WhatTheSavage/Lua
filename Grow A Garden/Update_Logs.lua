@@ -5,8 +5,22 @@ _G.script_setting = {
     Discord_Link = _G.Main.discord_link,
     Save_File = "/Grow_a_Garden.json",
 
-    Update_Date = "2 / 6 / 25",
+    Update_Date = "9 / 6 / 25",
     Update_Logs = {
+        {
+            Date = "9 / 6 / 25",
+            Content = {
+                ["Added"] = {
+                    
+                },
+                ["Remove"] = {
+
+                },
+                ["Fixed"] = {
+                    "Auto event not working"
+                }
+            }
+        },
         {
             Date = "2 / 6 / 25",
             Content = {
