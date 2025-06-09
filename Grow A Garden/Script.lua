@@ -265,7 +265,7 @@ local plant_data = {
 		"Zombified",
 		"Celestial",
 		"HoneyGlazed",
-		"Pollinated",
+		"Pollinated"
 	},
     shop = {
         "Carrot",
@@ -414,7 +414,7 @@ local pet_data = {
         "Giant Ant",
         "Caterpillar",
         "Praying Mantis",
-        "Dragonfly",
+        "Dragonfly"
     },
     event = {
         Lunar_Glow_Event = {
