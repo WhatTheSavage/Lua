@@ -1,4 +1,4 @@
-local DataSer = require(game:GetService("ReplicatedStorage").Modules.DataService)
+local DataSer = require(game:GetService("ReplicatedStorage"):WaitForChild("Modules"):WaitForChild("DataService"))
 local Players = game:GetService("Players")
 local localPlayer = Players.LocalPlayer
 local TeleportService = game:GetService("TeleportService")
@@ -13,15 +13,17 @@ while true do
     for _, v in pairs(DataSer:GetData().SavedObjects) do
         if v.ObjectType == "PetEgg" and v.Data.RandomPetData then
             local name = v.Data.RandomPetData.Name
+			local eggName = v.Data.EggName
 			StarterGui:SetCore("SendNotification", {
 				Title = "[ DEBUG ] Found",
-				Text = name,
+				Text = name .. " | " .. eggName,
 				Duration = 5,
 			})
 
             if table.find(_G.TargetNames, name) then
                 found = true
                 petNameFound = name
+				eggNameFound = eggName
                 break
             end
         end
@@ -30,7 +32,7 @@ while true do
     if found then
         StarterGui:SetCore("SendNotification", {
             Title = "✨ Found",
-            Text = petNameFound,
+            Text = petNameFound .. " | " .. eggNameFound,
             Duration = 5,
         })
         break
