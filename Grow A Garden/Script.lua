@@ -357,7 +357,7 @@ local plant_data = {
         "Nectarine",
         "Hive Fruit",
 		"Pollen Radar",
-		"Nectar Staff"
+		"Nectar Staff",
         "Honey Sprinkler",
         "Bee Egg",
         "Bee Crate",
