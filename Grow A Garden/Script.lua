@@ -246,24 +246,27 @@ local plant_data = {
             },
         }
     },
-    mutations = {
-        "Shocked",
-        "Twisted",
-        "Wet",
-        "Chilled",
-        "Frozen",
-        "Disco",
-        "Choc",
-        "Plasma",
-        "Burnt",
-        "Moonlit",
-        "Bloodlit",
-        "Zombified",
-        "Celestial",
-        "Pollinated",
-        "Voidtouched",
-        "HoneyGlazed"
-    },
+	mutations = {
+		"Shocked",
+		"Windstruck",
+		"Dawnbound",
+		"Twisted",
+		"Voidtouched",
+		"Wet",
+		"Chilled",
+		"Frozen",
+		"Disco",
+		"Choc",
+		"Plasma",
+		"Heavenly",
+		"Burnt",
+		"Moonlit",
+		"Bloodlit",
+		"Zombified",
+		"Celestial",
+		"HoneyGlazed",
+		"Pollinated",
+	},
     shop = {
         "Carrot",
         "Strawberry",
@@ -284,7 +287,8 @@ local plant_data = {
         "Mushroom",
         "Pepper",
         "Cacao",
-        "Beanstalk"
+        "Beanstalk",
+		"Ember Lily"
     },
     event = {
         Easter_2025 = {
@@ -324,6 +328,8 @@ local plant_data = {
             "Lilac",
             "Pink Lily",
             "Purple Dahila",
+			"Lavender",
+			"Nectarshade",
             "Nectarine",
             "Hive Fruit",
             "Sunflower"
@@ -346,8 +352,12 @@ local plant_data = {
     },
     swarm = {
         "Flower Seed Pack",
+		"Lavender",
+		"Nectarshade"
         "Nectarine",
         "Hive Fruit",
+		"Pollen Radar",
+		"Nectar Staff"
         "Honey Sprinkler",
         "Bee Egg",
         "Bee Crate",
@@ -428,7 +438,13 @@ local pet_data = {
             "Honey Bee",
             "Bear Bee",
             "Petal Bee",
-            "Queen Bee"
+            "Queen Bee",
+
+			"Wasp",
+			"Tarantula Hawk",
+			"Moth",
+			"Butterfly",
+			"Disco Bee"
         }
     }
 }
@@ -463,7 +479,8 @@ local egg_data = {
             "Night"
         },
         Bizzy_Bee_Event = {
-            "Bee"
+            "Bee",
+			"Anti Bee"
         }
     }
 }
