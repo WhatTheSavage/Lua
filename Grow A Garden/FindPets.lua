@@ -14,7 +14,7 @@ while true do
         if v.ObjectType == "PetEgg" and v.Data.RandomPetData then
             local name = v.Data.RandomPetData.Name
 			StarterGui:SetCore("SendNotification", {
-				Title = "[ DEBUG ] Found Egg",
+				Title = "[ DEBUG ] Found",
 				Text = name,
 				Duration = 5,
 			})
@@ -29,14 +29,14 @@ while true do
 
     if found then
         StarterGui:SetCore("SendNotification", {
-            Title = "✨ Found Target Pet",
+            Title = "✨ Found",
             Text = petNameFound,
             Duration = 5,
         })
         break
     else
         StarterGui:SetCore("SendNotification", {
-            Title = "Target Pet Not Found",
+            Title = "Not Found",
             Text = "Rejoin...",
             Duration = 5,
         })
