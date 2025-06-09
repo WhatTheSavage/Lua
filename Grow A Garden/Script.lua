@@ -353,7 +353,7 @@ local plant_data = {
     swarm = {
         "Flower Seed Pack",
 		"Lavender",
-		"Nectarshade"
+		"Nectarshade",
         "Nectarine",
         "Hive Fruit",
 		"Pollen Radar",
@@ -414,7 +414,7 @@ local pet_data = {
         "Giant Ant",
         "Caterpillar",
         "Praying Mantis",
-        "Dragonfly"
+        "Dragonfly",
     },
     event = {
         Lunar_Glow_Event = {
