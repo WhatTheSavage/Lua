@@ -1650,8 +1650,7 @@ do
 
         if state then
             task.spawn(function()
-                local label = workspace:WaitForChild("Interaction")
-                    :WaitForChild("UpdateItems")
+                local label = workspace
                     :WaitForChild("HoneyEvent")
                     :WaitForChild("HoneyCombpressor")
                     :WaitForChild("Sign")
