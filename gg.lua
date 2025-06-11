@@ -1,3 +1,24 @@
+loadstring(game:HttpGet('https://raw.githubusercontent.com/WhatTheSavage/Lua/refs/heads/main/keys.lua'))()
+
+local player = game.Players.LocalPlayer
+local userIdStr = tostring(player.UserId)
+local userKey = _G.main_key
+
+local function isValidKey()
+    if keysTable.Staff and keysTable.Staff[userIdStr] == userKey then
+        return true
+    end
+    if keysTable.LifeTime_Set1 and keysTable.LifeTime_Set1[userIdStr] == userKey then
+        return true
+    end
+    return false
+end
+
+if not isValidKey() then
+    player:Kick("\nInvalid key or UserID mismatch.")
+    return
+end
+
 _G.Main = {
     hub_name = "PrimeXploit",
     owner = "PrimeX_GG",
@@ -12,7 +33,7 @@ _G.Script_Status = {
     {"Basketball: Zero", nil},
     {"Build A Boat For Treasure", nil},
     {"Pligrammed", nil},
-    {"Forsaken", nil},
+    {"Forsaken", false},
     {"Volleyball Legend", nil},
     {"Driving Empire", nil},
 }
