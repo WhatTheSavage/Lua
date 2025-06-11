@@ -2,7 +2,9 @@ local url = "https://raw.githubusercontent.com/YourUser/Lua/main/keys.lua"
 
 local raw = game:HttpGet(url, true)
 local fn, err = loadstring(raw)
-assert(fn, ("Compile keys.lua failed: %s"):format(err))
+if not fn then
+    error("Compile keys.lua failed: " .. tostring(err), 2)
+end
 local keysTable = fn()
 
 local player = game.Players.LocalPlayer
