@@ -1,8 +1,8 @@
 return {
-    ["Staff"] = {
+    Staff = {
         ["8589544491"] = "PRIME-X-PLOIT-473115-P1H9WL-A3R0JS-ZG4XAU-RURV3F-T2L8XG"
     },
-    ["LifeTime_Set1"] = {
+    LifeTime_Set1 = {
         [""] = "PRIME-X-PLOIT-058548-SKGOWG-QSFW55-G7F4QT-GLPS47-KJODK4",
         [""] = "PRIME-X-PLOIT-207138-7ODCJN-RURCTN-V8AL7X-XS916C-2MS4V6",
         [""] = "PRIME-X-PLOIT-479542-NKOVF5-O1NT32-4NTMRM-UZFDJG-T0KSH5",
