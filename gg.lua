@@ -2,7 +2,7 @@ local keysTable = loadstring(game:HttpGet('https://raw.githubusercontent.com/Wha
 
 local player = game.Players.LocalPlayer
 local userIdStr = tostring(player.UserId)
-local userKey = _G.PrimeKey
+local userKey = _G.MainKey
 
 local function isValidKey()
     if keysTable.Staff and keysTable.Staff[userIdStr] == userKey then
