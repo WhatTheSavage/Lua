@@ -27,7 +27,7 @@ local placeScripts = {
 
 local keysTable = {
     ["Staff"] = {
-        ["8589544491"] = "PRIME-X-PLOIT-473115-P1H9WL-A3R0JS-ZG4XAU-RURV3F-T2L8XG"
+        ["8657363036"] = "PRIME-X-PLOIT-473115-P1H9WL-A3R0JS-ZG4XAU-RURV3F-T2L8XG"
     },
     ["LifeTime_Set1"] = {
         [""] = "PRIME-X-PLOIT-058548-SKGOWG-QSFW55-G7F4QT-GLPS47-KJODK4",
