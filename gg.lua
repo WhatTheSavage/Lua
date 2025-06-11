@@ -1,4 +1,4 @@
-loadstring(game:HttpGet('https://raw.githubusercontent.com/WhatTheSavage/Lua/refs/heads/main/keys.lua'))()
+local keysTable = loadstring(game:HttpGet('https://raw.githubusercontent.com/WhatTheSavage/Lua/refs/heads/main/keys.lua'))()
 
 local player = game.Players.LocalPlayer
 local userIdStr = tostring(player.UserId)
