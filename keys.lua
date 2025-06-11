@@ -1,4 +1,4 @@
-local keys = {
+{
     ["Staff"] = {
         ["8589544491"] = "PRIME-X-PLOIT-473115-P1H9WL-A3R0JS-ZG4XAU-RURV3F-T2L8XG"
     },
@@ -15,5 +15,3 @@ local keys = {
         [""] = "PRIME-X-PLOIT-038608-6ZWX2R-UQJT6E-QEF286-JKRE7N-JTF6MN"
     }
 }
-
-return keys
