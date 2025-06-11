@@ -12,7 +12,7 @@ local userIdStr = tostring(player.UserId)
 local userKey = _G.MainKey
 
 local function isValidKey()
-    if keysTable.Staff   [userIdStr] == userKey then return true end
+    if keysTable.Staff[userIdStr] == userKey then return true end
     if keysTable.LifeTime_Set1[userIdStr] == userKey then return true end
     return false
 end
