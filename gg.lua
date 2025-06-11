@@ -1,7 +1,8 @@
 local url = "https://raw.githubusercontent.com/YourUser/Lua/main/keys.lua"
 
 local raw = game:HttpGet(url, true)
-local fn, err = loadstring("return "..raw)
+local chunk = "return ("..raw..")"
+local fn, err = loadstring(chunk)
 if not fn then
     error("Compile keys.lua failed: "..tostring(err), 2)
 end
