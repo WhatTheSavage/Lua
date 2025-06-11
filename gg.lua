@@ -2,7 +2,7 @@ loadstring(game:HttpGet('https://raw.githubusercontent.com/WhatTheSavage/Lua/ref
 
 local player = game.Players.LocalPlayer
 local userIdStr = tostring(player.UserId)
-local userKey = _G.main_key
+local userKey = _G.PrimeKey
 
 local function isValidKey()
     if keysTable.Staff and keysTable.Staff[userIdStr] == userKey then
