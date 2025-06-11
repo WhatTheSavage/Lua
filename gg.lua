@@ -12,7 +12,7 @@ _G.Script_Status = {
     {"Basketball: Zero", nil},
     {"Build A Boat For Treasure", nil},
     {"Pligrammed", nil},
-    {"Forsaken", false},
+    {"Forsaken", nil},
     {"Volleyball Legend", nil},
     {"Driving Empire", nil},
 }
@@ -27,7 +27,9 @@ local placeScripts = {
 
 local keysTable = {
     ["Staff"] = {
-        ["8657363036"] = "PRIME-X-PLOIT-473115-P1H9WL-A3R0JS-ZG4XAU-RURV3F-T2L8XG"
+        ["8657363036"] = "PRIME-X-PLOIT-473115-P1H9WL-A3R0JS-ZG4XAU-RURV3F-T2L8XG",
+        ["1547445463"] = "PRIME-X-PLOIT-539897-A3KYV1-HD4ZMV-UXNLZ3-YQZCIH-7ZGGYE",
+        ["6016908523"] = "PRIME-X-PLOIT-190913-6F7SAP-2W8VQ2-25DEMF-BOMEZU-VMY99L"
     },
     ["LifeTime_Set1"] = {
         [""] = "PRIME-X-PLOIT-058548-SKGOWG-QSFW55-G7F4QT-GLPS47-KJODK4",
@@ -43,8 +45,8 @@ local keysTable = {
     }
 }
 
-local userIdStr = player.UserId
-local userKey = _G.PrimeKey
+local userIdStr = tostring(player.UserId)
+local userKey = tostring(_G.PrimeKey)
 
 local function isValidKey()
     if keysTable.Staff and keysTable.Staff[userIdStr] == userKey then
