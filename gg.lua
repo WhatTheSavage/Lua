@@ -17,29 +17,19 @@ _G.Script_Status = {
     {"Driving Empire", nil},
 }
 
-local url = "https://raw.githubusercontent.com/WhatTheSavage/Lua/refs/heads/main/keys.lua"
-local raw = game:HttpGet(url, true)
-
-local fn, err = loadstring(raw)
-assert(fn, ("Compile keys.lua failed: %s"):format(err))
-
-local keysTable = fn()
-
-for _, group in pairs(keysTable) do
-    for id in pairs(group) do
-        if id == "" then
-            group[id] = nil
-        end
-    end
-end
+local keysTable = loadstring(game:HttpGet('https://raw.githubusercontent.com/WhatTheSavage/Lua/refs/heads/main/keys.lua'))()
 
 local player = game.Players.LocalPlayer
 local userIdStr = tostring(player.UserId)
-local userKey = _G.MainKey
+local userKey = _G.main_key
 
 local function isValidKey()
-    if keysTable.Staff   [userIdStr] == userKey then return true end
-    if keysTable.LifeTime_Set1[userIdStr] == userKey then return true end
+    if keysTable.Staff and keysTable.Staff[userIdStr] == userKey then
+        return true
+    end
+    if keysTable.LifeTime_Set1 and keysTable.LifeTime_Set1[userIdStr] == userKey then
+        return true
+    end
     return false
 end
 
