@@ -509,7 +509,7 @@ local PetEggService = ReplicatedStorage.GameEvents:WaitForChild("PetEggService")
 local feedPetRemote = ReplicatedStorage.GameEvents:WaitForChild("ActivePetService")
 
 -- Networking
-local ByteNetReliable    = ReplicatedStorage:WaitForChild("ByteNetReliable")
+local ByteNetReliable = ReplicatedStorage:WaitForChild("ByteNetReliable")
 
 local farmRoot = workspace:WaitForChild("Farm")
 
@@ -579,6 +579,27 @@ do
         Title = "Welcome to " .. hub .. " : " .. player.Name,
         Content = "This is a script for " .. scriptName .. "\n\nIf you'd like me to create any additional game scripts or the script very lag, please let me know on Discord Server\n\n[ Carefully crafted, ensuring simplicity ]"
     })
+	local statusContent = ""
+	local lines = {}
+	for _, entry in ipairs(_G.script_setting.Script_Status) do
+		local name, status = entry[1], entry[2]
+		local icon
+
+		if status == nil then
+			icon = "🟡"
+		else
+			icon = status and "🟢" or "🔴"
+		end
+
+		lines[#lines+1] = icon .. " : " .. name
+	end
+
+	local statusContent = table.concat(lines, "\n")
+
+	welcome:AddParagraph({
+		Title   = "Script Status",
+		Content = statusContent
+	})
     welcome:AddButton({
         Title = "Discord Server",
         Description = discord_link,
@@ -841,6 +862,7 @@ do
     end)
 
     -- [ Harvert ]
+	local harvestCount = 0
     local function getSelected(tbl)
         local t = {}
         for name, enabled in pairs(tbl) do
@@ -910,169 +932,130 @@ do
             end
         end)
     end
-    local function harvestLoop()
-        local farmFolder = getPlayerFarmFolder()
-        if not farmFolder then
-            return
-        end
+	local function harvestLoop()
+		local farmFolder = getPlayerFarmFolder()
+		if not farmFolder then return end
 
-        local importantFolder = farmFolder:FindFirstChild("Important")
-        if not importantFolder then
-            return
-        end
+		local importantFolder = farmFolder:FindFirstChild("Important")
+		if not importantFolder then return end
 
-        local PlantsPhysical = importantFolder:FindFirstChild("Plants_Physical")
-        if not PlantsPhysical then
-            return
-        end
+		local PlantsPhysical = importantFolder:FindFirstChild("Plants_Physical")
+		if not PlantsPhysical then return end
 
-        local selectedFruits = getSelected(Options.Select_Fruits_Harvert.Value)
-        local selectedMuts = getSelected(Options.Select_Mutations_Harvert.Value)
-        local filterFruit = #selectedFruits > 0
-        local filterMut = #selectedMuts > 0
+		local selectedFruits = getSelected(Options.Select_Fruits_Harvert.Value)
+		local selectedMuts = getSelected(Options.Select_Mutations_Harvert.Value)
+		local filterFruit = #selectedFruits > 0
+		local filterMut = #selectedMuts > 0
 
-        for _, plant in ipairs(PlantsPhysical:GetChildren()) do
-            task.wait(0.01)
+		local function doHarvest(item)
+			ByteNetReliable:FireServer(
+				buffer.fromstring("\001\001\000\001"),
+				{ item }
+			)
+			harvestCount = harvestCount + 1
+			if harvestCount >= 100 then
+				task.wait(2)
+				harvestCount = 0
+			end
+		end
 
-            local growFolder = plant:FindFirstChild("Grow")
-            local ageVal     = growFolder and growFolder:FindFirstChild("Age")
-            local maxAgeAttr = plant:GetAttribute("MaxAge")
-            local maxAgeVal  = (maxAgeAttr ~= nil and maxAgeAttr) or (plant:FindFirstChild("MaxAge") and plant.MaxAge.Value)
+		for _, plant in ipairs(PlantsPhysical:GetChildren()) do
+			task.wait(0.01)
 
-            if ageVal and maxAgeVal then
-                if ageVal.Value < maxAgeVal then
-                    continue
-                end
-            elseif growFolder or plant:FindFirstChild("MaxAge") then
-                if not ageVal then end
-                if not maxAgeVal then end
-            else
-                continue
-            end
+			local growFolder = plant:FindFirstChild("Grow")
+			local ageVal = growFolder and growFolder:FindFirstChild("Age")
+			local maxAgeAttr = plant:GetAttribute("MaxAge")
+			local maxAgeVal = maxAgeAttr or (plant:FindFirstChild("MaxAge") and plant.MaxAge.Value)
+			if ageVal and maxAgeVal then
+				if ageVal.Value < maxAgeVal then
+					continue
+				end
+			elseif growFolder or plant:FindFirstChild("MaxAge") then
+				continue
+			else
+				continue
+			end
 
-            if filterFruit then
-                if not table.find(selectedFruits, plant.Name) then
-                    continue
-                end
-            end
+			if filterFruit and filterMut then
+				local fruitsFolder = plant:FindFirstChild("Fruits")
+				if fruitsFolder then
+					for _, fruit in ipairs(fruitsFolder:GetChildren()) do
+						doHarvest(fruit)
+					end
+				else
+					doHarvest(plant)
+				end
+				continue
+			end
 
-            if filterFruit and filterMut then
-                local mutOnPlant = false
-                for _, m in ipairs(selectedMuts) do
-                    local attrValue  = plant:GetAttribute(m)
-                    local childValue = plant:FindFirstChild(m) and plant[m].Value
-                    if attrValue == true or childValue == true then
-                        mutOnPlant = true
-                        break
-                    end
-                end
+			if (not filterFruit) and filterMut then
+				local fruitsFolder = plant:FindFirstChild("Fruits")
+				if fruitsFolder then
+					for _, fruit in ipairs(fruitsFolder:GetChildren()) do
+						for _, m in ipairs(selectedMuts) do
+							local ok = fruit:GetAttribute(m) or (fruit:FindFirstChild(m) and fruit[m].Value)
+							if ok then
+								doHarvest(fruit)
+								break
+							end
+						end
+					end
+				else
+					for _, m in ipairs(selectedMuts) do
+						local ok = plant:GetAttribute(m) or (plant:FindFirstChild(m) and plant[m].Value)
+						if ok then
+							doHarvest(plant)
+							break
+						end
+					end
+				end
+				continue
+			end
 
-                if mutOnPlant then
-                    local fruitsFolder = plant:FindFirstChild("Fruits")
-                    if fruitsFolder then
-                        for _, fruit in ipairs(fruitsFolder:GetChildren()) do
-                            ByteNetReliable:FireServer(
-                                buffer.fromstring("\001\001\000\001"),
-                                { fruit }
-                            )
-                        end
-                    else
-                        ByteNetReliable:FireServer(
-                            buffer.fromstring("\001\001\000\001"),
-                            { plant }
-                        )
-                    end
-                end
-                continue
-            end
+			if filterFruit and (not filterMut) then
+				if table.find(selectedFruits, plant.Name) then
+					local fruitsFolder = plant:FindFirstChild("Fruits")
+					if fruitsFolder then
+						for _, fruit in ipairs(fruitsFolder:GetChildren()) do
+							doHarvest(fruit)
+						end
+					else
+						doHarvest(plant)
+					end
+				end
+				continue
+			end
 
-            if (not filterFruit) and filterMut then
-                local fruitsFolder = plant:FindFirstChild("Fruits")
-                if fruitsFolder then
-                    for _, fruit in ipairs(fruitsFolder:GetChildren()) do
-                        for _, m in ipairs(selectedMuts) do
-                            local attrValueF  = fruit:GetAttribute(m)
-                            local childValueF = fruit:FindFirstChild(m) and fruit[m].Value
-                            if attrValueF == true or childValueF == true then
-                                ByteNetReliable:FireServer(
-                                    buffer.fromstring("\001\001\000\001"),
-                                    { fruit }
-                                )
-                                break
-                            end
-                        end
-                    end
-                else
-                    for _, m in ipairs(selectedMuts) do
-                        local attrValueP  = plant:GetAttribute(m)
-                        local childValueP = plant:FindFirstChild(m) and plant[m].Value
-                        if attrValueP == true or childValueP == true then
-                            ByteNetReliable:FireServer(
-                                buffer.fromstring("\001\001\000\001"),
-                                { plant }
-                            )
-                            break
-                        end
-                    end
-                end
-                continue
-            end
+			do
+				local fruitsFolder = plant:FindFirstChild("Fruits")
+				if fruitsFolder then
+					for _, fruit in ipairs(fruitsFolder:GetChildren()) do
+						doHarvest(fruit)
+					end
+				else
+					doHarvest(plant)
+				end
+			end
+		end
+	end
 
-            if filterFruit and (not filterMut) then
-                if table.find(selectedFruits, plant.Name) then
-                    local fruitsFolderCF = plant:FindFirstChild("Fruits")
-                    if fruitsFolderCF then
-                        for _, fruit in ipairs(fruitsFolderCF:GetChildren()) do
-                            ByteNetReliable:FireServer(
-                                buffer.fromstring("\001\001\000\001"),
-                                { fruit }
-                            )
-                        end
-                    else
-                        ByteNetReliable:FireServer(
-                            buffer.fromstring("\001\001\000\001"),
-                            { plant }
-                        )
-                    end
-                end
-                continue
-            end
+	local autoHarvertToggle = auto_harvert:AddToggle("Auto_Harvert", { Title = "Auto Harvert", Default = saved_Auto_Harvest })
+	autoHarvertToggle:OnChanged(function(state)
+		Settings.Plant.Harvert.Auto_Harvert = state
+		writefile(file, HttpService:JSONEncode(Settings))
 
-            do
-                local fruitsFolderAll = plant:FindFirstChild("Fruits")
-                if fruitsFolderAll then
-                    for _, fruit in ipairs(fruitsFolderAll:GetChildren()) do
-                        ByteNetReliable:FireServer(
-                            buffer.fromstring("\001\001\000\001"),
-                            { fruit }
-                        )
-                    end
-                else
-                    ByteNetReliable:FireServer(
-                        buffer.fromstring("\001\001\000\001"),
-                        { plant }
-                    )
-                end
-            end
-        end
-    end
-    local autoHarvertToggle = auto_harvert:AddToggle("Auto_Harvert", { Title = "Auto Harvert", Default = saved_Auto_Harvest })
-    autoHarvertToggle:OnChanged(function(state)
-        Settings.Plant.Harvert.Auto_Harvert = state
-        writefile(file, HttpService:JSONEncode(Settings))
+		inventoryFull = false
+		setupInventoryListener()
 
-        inventoryFull = false
-        setupInventoryListener()
-
-        if state then
-            task.spawn(function()
-                while autoHarvertToggle.Value and not inventoryFull do
-                    harvestLoop()
-                    task.wait(0.01)
-                end
-            end)
-        end
-    end)
+		if state then
+			task.spawn(function()
+				while autoHarvertToggle.Value and not inventoryFull do
+					harvestLoop()
+					task.wait(0.01)
+				end
+			end)
+		end
+	end)
 
     -- [ Auto Sell ]
     local auto_sell = Tabs.Plant:AddSection("[ 💵 ] - Auto Sell")
