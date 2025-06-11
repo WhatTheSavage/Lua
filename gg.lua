@@ -4,6 +4,19 @@ _G.Main = {
     discord_link = "https://discord.gg/dbnuRpY2"
 }
 
+_G.Script_Status = {
+    {"Grow A Garden", true},
+    {"Demonology", nil},
+    {"Project Smash", nil},
+    {"Blue Lock: Rivals", nil},
+    {"Basketball: Zero", nil},
+    {"Build A Boat For Treasure", nil},
+    {"Pligrammed", nil},
+    {"Forsaken", false},
+    {"Volleyball Legend", nil},
+    {"Driving Empire", nil},
+}
+
 local player = game.Players.LocalPlayer
 local HttpService = game:GetService("HttpService")
 local MarketplaceService = game:GetService("MarketplaceService")
