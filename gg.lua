@@ -6,6 +6,7 @@ if not fn then
     error("Compile keys.lua failed: " .. tostring(err), 2)
 end
 local keysTable = fn()
+assert(type(keysTable) == "table", "keys.lua did not return a table (got "..tostring(keysTable)..")")
 
 local player = game.Players.LocalPlayer
 local userIdStr = tostring(player.UserId)
