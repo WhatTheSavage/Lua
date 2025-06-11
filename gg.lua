@@ -1,18 +1,20 @@
 local url = "https://raw.githubusercontent.com/YourUser/Lua/main/keys.lua"
 
 local raw = game:HttpGet(url, true)
-local fn, err = loadstring(raw)
+local fn, err = loadstring("return "..raw)
 if not fn then
-    error("Compile keys.lua failed: " .. tostring(err), 2)
+    error("Compile keys.lua failed: "..tostring(err), 2)
 end
+
 local keysTable = fn()
+assert(type(keysTable)=="table", "keysTable must be a table")
 
 local player = game.Players.LocalPlayer
 local userIdStr = tostring(player.UserId)
 local userKey = _G.MainKey
 
 local function isValidKey()
-    if keysTable.Staff   [userIdStr] == userKey then return true end
+    if keysTable.Staff[userIdStr] == userKey then return true end
     if keysTable.LifeTime_Set1[userIdStr] == userKey then return true end
     return false
 end
