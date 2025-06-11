@@ -12,7 +12,7 @@ _G.Script_Status = {
     {"Basketball: Zero", nil},
     {"Build A Boat For Treasure", nil},
     {"Pligrammed", nil},
-    {"Forsaken", false},
+    {"Forsaken", nil},
     {"Volleyball Legend", nil},
     {"Driving Empire", nil},
 }
