@@ -17,7 +17,7 @@ _G.Script_Status = {
     {"Driving Empire", nil},
 }
 
-local url = "https://raw.githubusercontent.com/YourUser/Lua/main/keys.lua"
+local url = "https://raw.githubusercontent.com/WhatTheSavage/Lua/refs/heads/main/keys.lua"
 local raw = game:HttpGet(url, true)
 
 local fn, err = loadstring(raw)
