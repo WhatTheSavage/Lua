@@ -1,21 +1,16 @@
 local url = "https://raw.githubusercontent.com/YourUser/Lua/main/keys.lua"
 
 local raw = game:HttpGet(url, true)
-local chunk = "return ("..raw..")"
-local fn, err = loadstring(chunk)
-if not fn then
-    error("Compile keys.lua failed: "..tostring(err), 2)
-end
-
+local fn, err = loadstring(raw)
+assert(fn, ("Compile keys.lua failed: %s"):format(err))
 local keysTable = fn()
-assert(type(keysTable)=="table", "keysTable must be a table")
 
-local player = game.Players.LocalPlayer
+local player    = game.Players.LocalPlayer
 local userIdStr = tostring(player.UserId)
-local userKey = _G.MainKey
+local userKey   = _G.MainKey
 
 local function isValidKey()
-    if keysTable.Staff[userIdStr] == userKey then return true end
+    if keysTable.Staff   [userIdStr] == userKey then return true end
     if keysTable.LifeTime_Set1[userIdStr] == userKey then return true end
     return false
 end
@@ -86,7 +81,9 @@ local fields = {
     },
     {
         name = "Join Server",
-        value = "```" .. teleportCommand .. "```",
+        value = "
+" .. teleportCommand .. "
+",
         inline = false
     }
 }
