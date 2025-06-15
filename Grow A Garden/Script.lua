@@ -1675,7 +1675,6 @@ do
     local function autoBuyEggs(filterTypes)
         local stocks = getEggStocks()
         for idx, info in ipairs(stocks) do
-            print(("EggIdx=%d  Name=%s  Stock=%d"):format(idx, info.EggName, info.Stock))
             if info.Stock > 0 and table.find(filterTypes, info.EggName) then
                 buyPetEggRemote:FireServer(idx)
             end
