@@ -1,4 +1,36 @@
-local Notification = require(game:GetService("ReplicatedStorage").Modules.Notification)
+local workspace = game:GetService("Workspace")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Players = game:GetService("Players")
+
+local player  = Players.LocalPlayer
+
+-- Remotes for buying items
+local buySeedRemote = ReplicatedStorage.GameEvents:WaitForChild("BuySeedStock")
+local buyGearRemote = ReplicatedStorage.GameEvents:WaitForChild("BuyGearStock")
+local buyPetEggRemote = ReplicatedStorage.GameEvents:WaitForChild("BuyPetEgg")
+local buyBeeRemote = ReplicatedStorage.GameEvents:WaitForChild("BuyEventShopStock")
+
+-- Remotes for actions
+local plantRemote = ReplicatedStorage.GameEvents:WaitForChild("Plant_RE")
+local beeEventRemote = ReplicatedStorage.GameEvents:WaitForChild("HoneyMachineService_RE")
+local SellInventoryRemote = ReplicatedStorage.GameEvents:WaitForChild("Sell_Inventory")
+local favoriteRemote = ReplicatedStorage.GameEvents:WaitForChild("Favorite_Item")
+
+-- Service Remotes
+local PetEggService = ReplicatedStorage.GameEvents:WaitForChild("PetEggService")
+local feedPetRemote = ReplicatedStorage.GameEvents:WaitForChild("ActivePetService")
+
+-- Data
+local SeedData = require(ReplicatedStorage.Data.SeedData)
+local SeedPackData = require(ReplicatedStorage.Data.SeedPackData)
+local MutationData = require(ReplicatedStorage.Modules.MutationHandler)
+local PetData = require(ReplicatedStorage.Data.PetRegistry.PetList)
+local DataSer = require(ReplicatedStorage.Modules.DataService)
+
+-- Networking
+local ByteNetReliable = ReplicatedStorage:WaitForChild("ByteNetReliable")
+
+local Notification = require(ReplicatedStorage.Modules.Notification)
 
 local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
 local InterfaceManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/InterfaceManager.lua"))()
@@ -246,110 +278,9 @@ local plant_data = {
             },
         }
     },
-	mutations = {
-		"Shocked",
-		"Windstruck",
-		"Dawnbound",
-		"Twisted",
-		"Voidtouched",
-		"Wet",
-		"Chilled",
-		"Frozen",
-		"Disco",
-		"Choc",
-		"Plasma",
-		"Heavenly",
-		"Burnt",
-		"Moonlit",
-		"Bloodlit",
-		"Zombified",
-		"Celestial",
-		"HoneyGlazed",
-		"Pollinated"
-	},
-    shop = {
-        "Carrot",
-        "Strawberry",
-        "Blueberry",
-        "Orange Tulip",
-        "Tomato",
-        "Corn",
-        "Daffodil",
-        "Watermelon",
-        "Pumpkin",
-        "Apple",
-        "Bamboo",
-        "Coconut",
-        "Cactus",
-        "Dragon Fruit",
-        "Mango",
-        "Grape",
-        "Mushroom",
-        "Pepper",
-        "Cacao",
-        "Beanstalk",
-		"Ember Lily"
-    },
-    event = {
-        Easter_2025 = {
-            "Chocolate Carrot",
-            "Red Lollipop",
-            "Candy Sunflower",
-            "Easter Egg",
-            "Candy Blossom"
-        },
-        Angry_Plant = {
-            "Cranberry",
-            "Durian",
-            "Eggplant",
-            "Venus Fly Trap",
-            "Lotus"
-        },
-        Lunar_Glow_Event = {
-            "Nightshade",
-            "Glowshroom",
-            "Mint",
-            "Moonflower",
-            "Starfruit",
-            "Moonglow",
-            "Moon Blossom"
-        },
-        Blood_Moon_Shop = {
-            "Blood Banana",
-            "Moon Melon"
-        },
-        Twilight_Shop = {
-            "Celestiberry",
-            "Moon Mango"
-        },
-        Bizzy_Bee_Event = {
-            "Rose",
-            "Foxglove",
-            "Lilac",
-            "Pink Lily",
-            "Purple Dahila",
-			"Lavender",
-			"Nectarshade",
-            "Nectarine",
-            "Hive Fruit",
-            "Sunflower"
-        }
-    },
-    seed_pack = {
-        Normal = {
-            "Pear",
-            "Raspberry",
-            "Pineapple",
-            "Peach"
-        },
-        Exotic = {
-            "Papaya",
-            "Banana",
-            "Passionfruit",
-            "Soul Fruit",
-            "Cursed Fruit"
-        }
-    },
+	mutations = {},
+    shop = {},
+    seed_pack  = {},
     swarm = {
         "Flower Seed Pack",
 		"Lavender",
@@ -381,91 +312,9 @@ local gear_data = {
     "Harvert Tool"
 }
 
-local pet_data = {
-    pet = {
-        "Dog",
-        "Golden Lab",
-        "Bunny",
-
-        "Black Bunny",
-        "Cat",
-        "Deer",
-        "Chicken",
-
-        "Pig",
-        "Rooster",
-        "Spotted Deer",
-        "Monkey",
-        "Orange Tabby",
-
-        "Polar Bear",
-        "Turtle",
-        "Sea Otter",
-        "Cow",
-        "Sliver Monkey",
-
-        "Red Fox",
-        "Red Giant Ant",
-        "Brown Mouse",
-        "Squirrel",
-        "Grey Mouse",
-
-        "Snail",
-        "Giant Ant",
-        "Caterpillar",
-        "Praying Mantis",
-        "Dragonfly",
-    },
-    event = {
-        Lunar_Glow_Event = {
-            "Hedgehog",
-            "Kiwi",
-            "Panda",
-            "Blood Hedgehog",
-            "Frog",
-            "Mole",
-            "Moon Cat",
-            "Chicken Zombie",
-            "Blood Kiwi",
-            "Echo Frog",
-            "Owl",
-            "Blood Owl",
-            "Night Owl",
-            "Raccoon"
-        },
-        Bizzy_Bee_Event = {
-            "Bee",
-            "Honey Bee",
-            "Bear Bee",
-            "Petal Bee",
-            "Queen Bee",
-
-			"Wasp",
-			"Tarantula Hawk",
-			"Moth",
-			"Butterfly",
-			"Disco Bee"
-        }
-    }
-}
+local pet_data = {}
 
 local egg_data = {
-    other = {
-        locations = {
-            [1] = "-289.04126, 2.87552762, 3.73038578, 1, 0, 0, 0, 1, 0, 0, 0, 1",
-            [2] = "-289.039246, 2.79752779, 11.7703476, 1, 0, 0, 0, 1, 0, 0, 0, 1",
-            [3] = "-289.031219, 2.79752779, 7.74039459, 1, 0, 0, 0, 1, 0, 0, 0, 1"
-        },
-
-        skin_color = {
-            ["Common"] = "248, 248, 248",
-            ["Uncommon"] = "211, 167, 129",
-            ["Rare"] = "33, 84, 185",
-            ["Legendary"] = "163, 50, 50",
-            ["Mythical"] = "255, 170, 0",
-            ["Bug"] = "53, 190, 29"
-        }
-    },
     shop = {
         "Common",
         "Uncommon",
@@ -485,31 +334,42 @@ local egg_data = {
     }
 }
 
-local Players = game:GetService("Players")
+local seedOptions = {}
+for seedName, _ in pairs(SeedData) do
+    table.insert(seedOptions, seedName)
+end
+table.sort(seedOptions, function(a, b)
+    return SeedData[a].LayoutOrder < SeedData[b].LayoutOrder
+end)
 
-local workspace = game:GetService("Workspace")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local shopOptions = {}
+for seedName, data in pairs(SeedData) do
+    if data.DisplayInShop then
+        table.insert(shopOptions, seedName)
+    end
+end
+table.sort(shopOptions, function(a, b)
+    return SeedData[a].LayoutOrder < SeedData[b].LayoutOrder
+end)
+plant_data.shop = shopOptions
 
-local player  = Players.LocalPlayer
+local mutationList = {}
+for _, mut in pairs(MutationData:GetMutations()) do
+    table.insert(mutationList, mut.Name)
+end
+table.sort(mutationList)
+plant_data.mutations = mutationList
 
--- Remotes for buying items
-local buySeedRemote = ReplicatedStorage.GameEvents:WaitForChild("BuySeedStock")
-local buyGearRemote = ReplicatedStorage.GameEvents:WaitForChild("BuyGearStock")
-local buyPetEggRemote = ReplicatedStorage.GameEvents:WaitForChild("BuyPetEgg")
-local buyBeeRemote = ReplicatedStorage.GameEvents:WaitForChild("BuyEventShopStock")
-
--- Remotes for actions
-local plantRemote = ReplicatedStorage.GameEvents:WaitForChild("Plant_RE")
-local beeEventRemote = ReplicatedStorage.GameEvents:WaitForChild("HoneyMachineService_RE")
-local SellInventoryRemote = ReplicatedStorage.GameEvents:WaitForChild("Sell_Inventory")
-local favoriteRemote = ReplicatedStorage.GameEvents:WaitForChild("Favorite_Item")
-
--- Service Remotes
-local PetEggService = ReplicatedStorage.GameEvents:WaitForChild("PetEggService")
-local feedPetRemote = ReplicatedStorage.GameEvents:WaitForChild("ActivePetService")
-
--- Networking
-local ByteNetReliable = ReplicatedStorage:WaitForChild("ByteNetReliable")
+for name, info in pairs(PetData) do
+    table.insert(pet_data, name)
+end
+table.sort(pet_data, function(a, b)
+    local infoA, infoB = PetData[a], PetData[b]
+    if infoA.LayoutOrder and infoB.LayoutOrder then
+        return infoA.LayoutOrder < infoB.LayoutOrder
+    end
+    return a:lower() < b:lower()
+end)
 
 local farmRoot = workspace:WaitForChild("Farm")
 
@@ -700,31 +560,6 @@ do
 
 
     -- [ Plant ]
-    local harvestOptions = {}
-    local seen = {}
-
-    for _, name in ipairs(plant_data.shop) do
-        if not seen[name] then
-            table.insert(harvestOptions, name)
-            seen[name] = true
-        end
-    end
-    for _, packList in pairs(plant_data.seed_pack) do
-        for _, name in ipairs(packList) do
-            if not seen[name] then
-                table.insert(harvestOptions, name)
-                seen[name] = true
-            end
-        end
-    end
-    for _, eventList in pairs(plant_data.event) do
-        for _, name in ipairs(eventList) do
-            if not seen[name] then
-                table.insert(harvestOptions, name)
-                seen[name] = true
-            end
-        end
-    end
     local function getPlayerFarmFolder()
         local farmParent = workspace:FindFirstChild("Farm")
         if not farmParent then return nil end
@@ -744,7 +579,7 @@ do
     local select_seed = auto_plant:AddDropdown("Select_Seed_Plant", {
         Title = "Select Seeds To Plant",
         Description = "You can select multiple Seeds",
-        Values = harvestOptions,
+        Values = seedOptions,
         Multi = true,
         Default = saved_Select_Seeds,
     })
@@ -876,7 +711,7 @@ do
     local selectFruits = auto_harvert:AddDropdown("Select_Fruits_Harvert", {
         Title = "Select Fruits To Harvert",
         Description = "You can select multiple Fruits",
-        Values = harvestOptions,
+        Values = seedOptions,
         Multi = true,
         Default = saved_Harvest_Fruits,
     })
@@ -1396,20 +1231,11 @@ do
     end)
 
     -- [ Pet ]
-    local petOptions = {}
-    for _, name in ipairs(pet_data.pet) do
-        table.insert(petOptions, name)
-    end
-    for _, eventList in pairs(pet_data.event) do
-        for _, name in ipairs(eventList) do
-            table.insert(petOptions, name)
-        end
-    end
     local auto_sell_pet = Tabs.Pet:AddSection("[ 🐶 ] - Auto Sell Pet")
     local select_pet_to_sell = auto_sell_pet:AddDropdown("Select_Pet_To_Sell", {
         Title = "Select Pets To Sell",
         Description = "You can select multiple Pets",
-        Values = petOptions,
+        Values = pet_data,
         Multi = true,
         Default = saved_Pet_To_Sell,
     })
@@ -1432,14 +1258,14 @@ do
                             for _, tool in ipairs(player.Backpack:GetChildren()) do
                                 if tool:IsA("Tool") then
                                     local baseName = tool.Name:match("^(.-)%s*%[")
-                                    if baseName == petName and tool:GetAttribute("Favorite") ~= true then
+                                    if baseName == petName and tool:GetAttribute("d") ~= true then
                                         targetTool = tool
                                         break
                                     end
                                 end
                             end
                             if targetTool and player.Character and player.Character:FindFirstChildOfClass("Humanoid") then
-                                if targetTool:GetAttribute("Favorite") ~= true then
+                                if targetTool:GetAttribute("d") ~= true then
                                     player.Character:FindFirstChildOfClass("Humanoid"):EquipTool(targetTool)
                                     sellPetEvent:FireServer(targetTool)
                                     task.wait(0.5)
@@ -1454,26 +1280,28 @@ do
     end)
 
     -- [ Auto Feed Pet ]
+    local function cleanName(raw)
+        local s = raw:lower()
+        s = s:gsub("%b[]", "")
+        s = s:gsub("%b()", "")
+        return s:match("^%s*(.-)%s*$")
+    end
+
     local function findFruitTool(fruitName)
         local lc = fruitName:lower()
         for _, container in ipairs({player.Backpack, player.Character}) do
             if container then
                 for _, t in ipairs(container:GetChildren()) do
                     if t:IsA("Tool") then
-                        local nameLower = t.Name:lower()
-                        local isSeed = nameLower:find("seed")
-                        local isFavorite = t:GetAttribute("Favorite") == true
+                        local nameRaw = t.Name
+                        local nameLower = nameRaw:lower()
+                        local isSeed = nameLower:find("seed") ~= nil
+                        local isFav = t:GetAttribute("d") == true
+                        local stripped = cleanName(nameRaw)
+                        local willHold = (not isSeed) and (not isFav) and stripped:match("^"..lc) ~= nil
 
-                        if not isSeed and not isFavorite then
-                            local strippedName = nameLower
-                            local closeBracket = nameLower:find("]%s*")
-                            if closeBracket then
-                                strippedName = nameLower:sub(closeBracket + 1)
-                            end
-
-                            if strippedName:match("^%s*" .. lc) then
-                                return t
-                            end
+                        if willHold then
+                            return t
                         end
                     end
                 end
@@ -1481,6 +1309,7 @@ do
         end
         return nil
     end
+
     local auto_feed_pet = Tabs.Pet:AddSection("[ 🍒 ] - Auto Feed Pet")
     local select_pet_to_feed = auto_feed_pet:AddDropdown("Select_Pets_To_Feed", {
         Title = "Select Pets To Feed",
@@ -1496,7 +1325,7 @@ do
     local select_fruits_to_feed = auto_feed_pet:AddDropdown("Select_Fruits_To_Feed", {
         Title = "Select Fruits To Feed",
         Description = "You can select multiple Fruits",
-        Values = harvestOptions,
+        Values = seedOptions,
         Multi = true,
         Default = saved_Fruit_To_Feed,
     })
@@ -1504,30 +1333,43 @@ do
         Settings.Pet.Auto_Feed_Pet.Select_Fruit_To_Feed = value
         writefile(file, HttpService:JSONEncode(Settings))
     end)
-    local petMap = {}
     local function updateOwnedPets()
         petOptions = {}
         petMap = {}
+
         local gui = player.PlayerGui:FindFirstChild("ActivePetUI")
         local scrolling = gui and gui.Frame.Main:FindFirstChild("ScrollingFrame")
+
         for _, petContainer in ipairs(workspace:WaitForChild("PetsPhysical"):GetChildren()) do
             if petContainer:GetAttribute("OWNER") == player.Name then
                 local innerModel = petContainer:FindFirstChildWhichIsA("Model")
-                local modelName = innerModel and innerModel.Name or petContainer.Name
+                local defaultName = innerModel and innerModel.Name or petContainer.Name
+
                 local petUUID = petContainer:GetAttribute("UUID")
-                local displayName = modelName
+
+                local nameText = defaultName
+                local typeText = defaultName
+
                 if scrolling and petUUID then
                     local petFrame = scrolling:FindFirstChild(petUUID)
-                    if petFrame and petFrame:FindFirstChild("PET_NAME") then
-                        displayName = petFrame.PET_NAME.Text
+                    if petFrame then
+                        if petFrame:FindFirstChild("PET_NAME") then
+                            nameText = petFrame.PET_NAME.Text
+                        end
+                        if petFrame:FindFirstChild("PET_TYPE") then
+                            typeText = petFrame.PET_TYPE.Text
+                        end
                     end
                 end
-                local entryName = displayName .. " - [ " .. modelName .. " ] "
+
+                local entryName = nameText .. " - [ " .. typeText .. " ]"
                 table.insert(petOptions, entryName)
                 petMap[entryName] = petUUID
             end
         end
+
         select_pet_to_feed:SetValues(petOptions)
+
         for i = #saved_Pet_To_Feed, 1, -1 do
             if not table.find(petOptions, saved_Pet_To_Feed[i]) then
                 table.remove(saved_Pet_To_Feed, i)
@@ -1546,6 +1388,21 @@ do
             updateOwnedPets()
         end
     end)
+
+    local function getSelectedPets()
+        local pets = {}
+        for name, enabled in pairs(Options.Select_Pets_To_Feed.Value) do
+            if enabled then table.insert(pets, name) end
+        end
+        return pets
+    end
+    local function getSelectedFruits()
+        local fruits = {}
+        for name, enabled in pairs(Options.Select_Fruits_To_Feed.Value) do
+            if enabled then table.insert(fruits, name) end
+        end
+        return fruits
+    end
     local auto_feed_pet_toggle = auto_feed_pet:AddToggle("Auto_Feed_Pet", { Title = "Auto Feed Pet", Default = saved_Auto_Feed_Pet })
     auto_feed_pet_toggle:OnChanged(function(on)
         Settings.Pet.Auto_Feed_Pet.Auto_Feed_Pet = on
@@ -1554,47 +1411,32 @@ do
         if on then
             task.spawn(function()
                 while auto_feed_pet_toggle.Value do
-                    local fruitsToFeed = {}
-                    for fruitName, enabled in pairs(Options.Select_Fruits_To_Feed.Value) do
-                        if enabled then
-                            table.insert(fruitsToFeed, fruitName)
-                        end
-                    end
-                    if #saved_Pet_To_Feed == 0 or #fruitsToFeed == 0 then
+                    local petsToFeed   = getSelectedPets()
+                    local fruitsToFeed = getSelectedFruits()
+
+                    if #petsToFeed == 0 or #fruitsToFeed == 0 then
                         task.wait(1)
                         continue
                     end
 
-                    for _, entryName in ipairs(saved_Pet_To_Feed) do
+                    for _, entryName in ipairs(petsToFeed) do
                         local petUUID = petMap[entryName]
                         if not petUUID then
                             continue
                         end
 
                         local gui = player.PlayerGui:FindFirstChild("ActivePetUI")
-                        if not gui then
-                            continue
-                        end
-                        local scrolling = gui.Frame.Main:FindFirstChild("ScrollingFrame")
-                        if not scrolling then
-                            continue
-                        end
-                        local petFrame = scrolling:FindFirstChild(petUUID)
-                        if not petFrame then
-                            continue
-                        end
-                        local stats = petFrame:FindFirstChild("PetStats")
-                        if not stats then
-                            continue
-                        end
-                        local hungerBar = stats:FindFirstChild("HUNGER") and stats.HUNGER:FindFirstChild("HUNGER_BAR")
+                        local scroll = gui and gui.Frame.Main:FindFirstChild("ScrollingFrame")
+                        local petFrame = scroll and scroll:FindFirstChild(petUUID)
+                        local hungerBar = petFrame and petFrame:FindFirstChild("PetStats") and petFrame.PetStats:FindFirstChild("HUNGER") and petFrame.PetStats.HUNGER:FindFirstChild("HUNGER_BAR")
                         if not hungerBar then
                             continue
                         end
 
-                        while hungerBar.Size.X.Scale < 1 do
+                        print("Hunger:", hungerBar.Size.X.Scale)
+                        while hungerBar.Size.X.Scale < 0.9 do
                             local tool = findFruitTool(fruitsToFeed[1])
-                            if tool and player.Character and player.Character:FindFirstChildOfClass("Humanoid") then
+                            if tool then
                                 player.Character:FindFirstChildOfClass("Humanoid"):EquipTool(tool)
                                 task.wait(0.1)
                                 feedPetRemote:FireServer("Feed", petUUID)
@@ -1602,23 +1444,16 @@ do
                             else
                                 break
                             end
-
-                            local newPetFrame = scrolling:FindFirstChild(petUUID)
-                            if not newPetFrame then
-                                break
-                            end
-                            local newStats = newPetFrame:FindFirstChild("PetStats")
-                            if not newStats then
-                                break
-                            end
-                            hungerBar = newStats:FindFirstChild("HUNGER") and newStats.HUNGER:FindFirstChild("HUNGER_BAR")
-                            if not hungerBar then
-                                break
-                            end
+                            local newFrame = scroll and scroll:FindFirstChild(petUUID)
+                            hungerBar = newFrame and newFrame:FindFirstChild("PetStats") and newFrame.PetStats:FindFirstChild("HUNGER") and newFrame.PetStats.HUNGER:FindFirstChild("HUNGER_BAR")
+                            if not hungerBar then break end
                         end
                     end
 
                     task.wait(1)
+                end
+                if player.Character and player.Character:FindFirstChildOfClass("Humanoid") then
+                    player.Character:FindFirstChildOfClass("Humanoid"):UnequipTools()
                 end
             end)
         else
@@ -1640,7 +1475,7 @@ do
         Settings.Event.Swarm.Auto_UnFavorite = state
         writefile(file, HttpService:JSONEncode(Settings))
     end)
-    local auto_Collect_Honey = bee_event:AddToggle("Auto_Collect_Honey", { Title = "Auto Collect Honey and Give Plant", Default = saved_Auto_Collect_Honey })
+    local auto_Collect_Honey = bee_event:AddToggle("Auto_Collect_Honey", { Title = "Auto Farm Honey", Default = saved_Auto_Collect_Honey })
     local autoCollectEnabled = auto_Collect_Honey.Value
     auto_Collect_Honey:OnChanged(function(state)
         Settings.Event.Swarm.Auto_Collect_Honey = state
@@ -1832,6 +1667,20 @@ do
             end)
         end
     end)
+    local function getEggStocks()
+        local data = DataSer:GetData()
+        return (data.PetEggStock and data.PetEggStock.Stocks) or {}
+    end
+
+    local function autoBuyEggs(filterTypes)
+        local stocks = getEggStocks()
+        for idx, info in ipairs(stocks) do
+            print(("EggIdx=%d  Name=%s  Stock=%d"):format(idx, info.EggName, info.Stock))
+            if info.Stock > 0 and table.find(filterTypes, info.EggName) then
+                buyPetEggRemote:FireServer(idx)
+            end
+        end
+    end
     local egg_choices_shop = {}
     for _, name in ipairs(egg_data.shop) do
         table.insert(egg_choices_shop, name .. " Egg")
@@ -1848,114 +1697,28 @@ do
         Settings.Shop.Egg_Shop.Select_Eggs = Value
         writefile(file, HttpService:JSONEncode(Settings))
     end)
-    local function parseColor(str)
-        local r,g,b = str:match("(%d+),%s*(%d+),%s*(%d+)")
-        return Color3.fromRGB(tonumber(r), tonumber(g), tonumber(b))
-    end
-
-    local skinColorMap = {}
-    for name, str in pairs(egg_data.other.skin_color) do
-        skinColorMap[name] = parseColor(str)
-    end
-
-    local locMapping = {}
-    for idx, locStr in pairs(egg_data.other.locations) do
-        local nums = {}
-        for v in locStr:gmatch("([^,]+)") do
-            table.insert(nums, tonumber(v))
-        end
-        locMapping[idx] = Vector3.new(nums[1], nums[2], nums[3])
-    end
-    local function findEggIndex(model)
-        local pivotPos = model:GetPivot().Position
-        local closestIdx = nil
-        local closestDist = math.huge
-
-        for idx, locPos in pairs(locMapping) do
-            local d = (pivotPos - locPos).Magnitude
-            if d < closestDist then
-                closestDist = d
-                closestIdx = idx
-            end
-        end
-
-        return closestIdx
-    end
-    local function autoBuyEggs(filterTypes)
-        local ok, eggFolder = pcall(function()
-            return workspace:WaitForChild("NPCS"):WaitForChild("Pet Stand"):WaitForChild("EggLocations")
-        end)
-        if not ok then
-            return
-        end
-
-        for _, model in ipairs(eggFolder:GetChildren()) do
-            if not model:IsA("Model") then
-                continue
-            end
-
-            local isPurchased = model:GetAttribute("RobuxEggOnly")
-            if isPurchased then
-                continue
-            end
-
-            local rawColor = model:GetAttribute("EggColor")
-            local color = nil
-            if typeof(rawColor) == "Color3" then
-                color = rawColor
-            elseif type(rawColor) == "string" then
-                color = parseColor(rawColor)
-            else
-                continue
-            end
-
-            local eggType = nil
-            for name, c in pairs(skinColorMap) do
-                if (c == color) then
-                    eggType = name
-                    break
-                end
-            end
-            if not eggType then
-                continue
-            end
-
-            if not table.find(filterTypes, eggType) then
-                continue
-            end
-
-            local idx = findEggIndex(model)
-            if idx then
-                buyPetEggRemote:FireServer(idx)
-            end
-        end
-    end
-    local auto_buy_egg_button = egg_shop:AddToggle("Auto_buy_egg", { Title = "Auto Buy Eggs", Default = saved_Auto_Buy_Eggs })
-    auto_buy_egg_button:OnChanged(function(val)
-        Settings.Shop.Egg_Shop.Auto_Buy_Eggs = val
+    local auto_buy_egg_button = egg_shop:AddToggle("Auto_Buy_Eggs", { Title = "Auto Buy Eggs", Default = saved_Auto_Buy_Eggs })
+    auto_buy_egg_button:OnChanged(function(on)
+        Settings.Shop.Egg_Shop.Auto_Buy_Eggs = on
         writefile(file, HttpService:JSONEncode(Settings))
 
-        if val then
-            spawn(function()
-                while Options.Auto_buy_egg.Value do
+        if on then
+            task.spawn(function()
+                while auto_buy_egg_button.Value do
                     local selected = {}
                     for name, enabled in pairs(Options.Select_Eggs.Value) do
                         if enabled then
-                            local eggName = tostring(name):gsub("%s*Egg$", "")
-                            table.insert(selected, eggName)
+                            table.insert(selected, name)
                         end
-                    end
-                    if #selected == 0 then
-                        selected = egg_data.shop
                     end
 
                     autoBuyEggs(selected)
-
                     task.wait(1)
                 end
             end)
         end
     end)
+
 
     -- [ Fovorite ]
     local function favoriteLoop()
@@ -1977,7 +1740,7 @@ do
                     continue
                 end
 
-                if tool:GetAttribute("Favorite") == true then
+                if tool:GetAttribute("d") == true then
                     continue
                 end
 
@@ -2046,7 +1809,7 @@ do
     local selectFavos_Fruits = auto_favorite:AddDropdown("Select_Favorite_Fruits", {
         Title = "Select Favorite Fruits",
         Description = "You can select multiple Fruits",
-        Values = harvestOptions,
+        Values = seedOptions,
         Multi = true,
         Default = saved_Favorite_Fruits,
     })
@@ -2068,7 +1831,7 @@ do
     local selectFavos_Pets = auto_favorite:AddDropdown("Select_Favorite_Pets", {
         Title = "Select Favorite Pets",
         Description = "You can select multiple Pets",
-        Values = petOptions,
+        Values = pet_data,
         Multi = true,
         Default = saved_Favorite_Pets,
     })
