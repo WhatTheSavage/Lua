@@ -10,7 +10,7 @@ _G.Script_Status = {
     {"Project Smash", nil},
     {"Blue Lock: Rivals", nil},
     {"Basketball: Zero", nil},
-    {"Build A Boat For Treasure", nil},
+    {"Build A Boat For Treasure", true},
     {"Pligrammed", nil},
     {"Forsaken", nil},
     {"Volleyball Legend", nil},
@@ -23,6 +23,7 @@ local MarketplaceService = game:GetService("MarketplaceService")
 
 local placeScripts = {
     [126884695634066] = "https://raw.githubusercontent.com/WhatTheSavage/Lua/refs/heads/main/Grow%20A%20Garden/Update_Logs.lua",
+    [537413528] = "https://raw.githubusercontent.com/WhatTheSavage/Lua/refs/heads/main/Build%20A%20Boat/Update_Logs.lua"
 }
 
 local keysTable = {
