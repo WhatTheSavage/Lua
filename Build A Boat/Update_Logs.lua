@@ -12,3 +12,5 @@ _G.script_setting = {
 
     }
 }
+
+https://raw.githubusercontent.com/WhatTheSavage/Lua/refs/heads/main/Build%20A%20Boat/Script.lua
