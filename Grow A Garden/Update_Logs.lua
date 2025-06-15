@@ -7,8 +7,22 @@ _G.script_setting = {
 
     Script_Status = _G.Script_Status,
 
-    Update_Date = "9 / 6 / 25",
+    Update_Date = "15 / 6 / 25",
     Update_Logs = {
+        {
+            Date = "15 / 6 / 25",
+            Content = {
+                ["Added"] = {
+                    "Auto update script"
+                },
+                ["Remove"] = {
+
+                },
+                ["Fixed"] = {
+                    "Auto buy egg very stupid"
+                }
+            }
+        },
         {
             Date = "9 / 6 / 25",
             Content = {
